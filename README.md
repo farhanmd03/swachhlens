@@ -1,7 +1,7 @@
 # SwachhLens 🔎
 
 ![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=white)
-![Firebase](https://img.shields.io/badge/Firebase-Auth%20%7C%20Firestore%20%7C%20Hosting-FFCA28?logo=firebase&logoColor=white)
+[![Firebase](https://img.shields.io/badge/Firebase-Auth%20%7C%20Firestore-FFCA28?logo=firebase&logoColor=white)](https://firebase.google.com/)
 ![Gemini](https://img.shields.io/badge/Google-Gemini%203.6%20Flash-4285F4?logo=google&logoColor=white)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 
@@ -427,7 +427,6 @@ This prototype intentionally uses Firebase's **Spark no-cost plan**.
 
 - Firebase Authentication
 - Cloud Firestore
-- Firebase Hosting
 
 ### Not Used
 
@@ -554,7 +553,7 @@ The repository contains scripts for:
 - demo complaint seeding
 - demo image repair
 
-Demo complaints and associated images are fictional presentation data and are not real municipal records. If any demo images have attribution/license requirements, keep `demo-assets/SOURCES.md` in the repository.
+Demo complaints are fictional hackathon presentation records. The associated demo photographs are illustrative waste images used for demonstration purposes. Where attribution or licensing applies, source information is documented in `demo-assets/SOURCES.md`.
 
 ---
 
@@ -634,7 +633,6 @@ A demo video will be added here once recorded.
 | React | Frontend applications |
 | Vite | Build tooling |
 | Firebase Authentication | Citizen and municipal authentication |
-| Cloud Firestore | Real-time data layer |
 | Cloud Firestore | Real-time data layer |
 | Google Gemini 3.6 Flash | Multimodal waste analysis |
 | Leaflet | Interactive maps |
