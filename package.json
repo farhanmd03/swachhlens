@@ -1,0 +1,8 @@
+{
+  "name": "swachhlens",
+  "type": "module",
+  "dependencies": {
+    "firebase": "^12.18.0",
+    "jpeg-js": "^0.4.4"
+  }
+}

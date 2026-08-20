@@ -1,0 +1,139 @@
+rules_version = '2';
+
+// SwachhLens Firestore Security Rules
+//
+// Architecture limitation (hackathon / Firebase Spark):
+// Because there are no Cloud Functions, computed fields (priorityScore,
+// aiResult, urgentEscalation, isDuplicateOf, priorityReasons,
+// recommendedIntervention) are written by the client.
+// These rules validate structure and enforce access control, but cannot
+// independently verify the correctness of client-side calculations.
+//
+// Production architecture would move all privileged processing
+// (AI analysis, priority scoring, duplicate detection, recommendation)
+// to a secure server-side service (Cloud Functions or Cloud Run).
+//
+// IMPORTANT: Municipal users are distinguished from citizens by checking
+// !request.auth.token.firebase.sign_in_provider.matches('anonymous').
+// Anonymous sign-in is used for citizens. Email/password is used for
+// municipal portal users. This is a client-trust architecture.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Helper: is the user a municipal (non-anonymous) user? ─────
+    function isMunicipal() {
+      return request.auth != null
+        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+    }
+
+    // ── citizens ─────────────────────────────────────────────────
+    match /citizens/{citizenId} {
+      // Citizens can read, create, and update only their own profile.
+      // Demo citizen profiles can also be seeded.
+      allow read: if request.auth != null
+        && (request.auth.uid == citizenId || isMunicipal() || citizenId.matches('demo-citizen-.*'));
+      allow create, update: if request.auth != null
+        && (request.auth.uid == citizenId || citizenId.matches('demo-citizen-.*'));
+      allow delete: if false;
+    }
+
+    // ── complaints ───────────────────────────────────────────────
+    match /complaints/{complaintId} {
+
+      // Any authenticated user can read complaints.
+      allow read: if request.auth != null;
+
+      // Citizens can create a complaint that belongs to them.
+      // Demo seed script can also create demo complaints.
+      allow create: if request.auth != null
+        && (
+          (request.resource.data.citizenId == request.auth.uid && request.resource.data.status == 'reported')
+          || (request.resource.data.citizenId.matches('demo-citizen-.*')
+              && request.resource.data.status in ['reported', 'verified', 'assigned', 'in_progress', 'resolved'])
+        )
+        // Required fields
+        && request.resource.data.citizenId is string
+        && request.resource.data.imageBase64 is string
+        && request.resource.data.comment is string
+        && request.resource.data.status is string
+        // GPS
+        && request.resource.data.gps is map
+        && request.resource.data.gps.lat is number
+        && request.resource.data.gps.lng is number
+        // Timestamp
+        && request.resource.data.timestamp is number
+        // AI result
+        && request.resource.data.aiResult is map
+        && request.resource.data.aiResult.wasteType is string
+        && request.resource.data.aiResult.volumeEstimate is string
+        && request.resource.data.aiResult.confidence is number
+        // Priority
+        && request.resource.data.priorityScore is number
+        && request.resource.data.priorityScore >= 0
+        && request.resource.data.priorityScore <= 100
+        && request.resource.data.urgentEscalation is bool;
+
+      // Municipal users can update operational/dispatch fields.
+      // Demo records can also be repaired by seed script.
+      allow update: if (
+        (request.auth != null && (resource.data.citizenId.matches('demo-citizen-.*') || complaintId.matches('demo-complaint-.*')))
+        || (
+          isMunicipal()
+          // Immutable core fields must not change
+          && request.resource.data.citizenId == resource.data.citizenId
+          && request.resource.data.imageBase64 == resource.data.imageBase64
+          && request.resource.data.gps == resource.data.gps
+          && request.resource.data.timestamp == resource.data.timestamp
+          && request.resource.data.aiResult == resource.data.aiResult
+          && request.resource.data.priorityScore == resource.data.priorityScore
+          && request.resource.data.urgentEscalation == resource.data.urgentEscalation
+          && request.resource.data.isDuplicateOf == resource.data.isDuplicateOf
+          // Status must be a valid value
+          && request.resource.data.status in ['reported', 'verified', 'assigned', 'in_progress', 'resolved']
+        )
+      );
+
+      // Citizens can submit feedback on their own resolved complaints.
+      // ONLY the 'feedback' field may be modified — all other fields
+      // must remain unchanged (enforced by diff check).
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.citizenId
+        && resource.data.status == 'resolved'
+        && (!('feedback' in resource.data) || resource.data.feedback == null)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['feedback'])
+        && request.resource.data.feedback is map
+        && request.resource.data.feedback.result in ['resolved', 'partial', 'not_resolved']
+        && request.resource.data.feedback.rating is number
+        && request.resource.data.feedback.rating >= 1
+        && request.resource.data.feedback.rating <= 5;
+
+      // No deletes
+      allow delete: if false;
+    }
+
+    // ── teams ─────────────────────────────────────────────────────
+    match /teams/{teamId} {
+      // Any authenticated user can read teams.
+      allow read: if request.auth != null;
+
+      // Authenticated users can update teams (dispatch load tracking).
+      allow update: if request.auth != null
+        && request.resource.data.name is string
+        && request.resource.data.type is string
+        && request.resource.data.currentLoad is number
+        && request.resource.data.currentLoad >= 0
+        && request.resource.data.active is bool;
+
+      // Allow create for seed script.
+      allow create: if request.auth != null;
+
+      allow delete: if false;
+    }
+
+    // ── Deny everything else ──────────────────────────────────────
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
