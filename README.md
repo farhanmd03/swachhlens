@@ -635,7 +635,7 @@ A demo video will be added here once recorded.
 | Vite | Build tooling |
 | Firebase Authentication | Citizen and municipal authentication |
 | Cloud Firestore | Real-time data layer |
-| Firebase Hosting | Web deployment |
+| Cloud Firestore | Real-time data layer |
 | Google Gemini 3.6 Flash | Multimodal waste analysis |
 | Leaflet | Interactive maps |
 | OpenStreetMap | Map tiles |
