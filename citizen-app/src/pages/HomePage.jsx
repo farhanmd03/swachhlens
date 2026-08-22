@@ -13,9 +13,9 @@ import {
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
-  Sparkles,
   Inbox,
 } from 'lucide-react';
+import AppLogoIcon from '../components/AppLogoIcon.jsx';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -64,7 +64,7 @@ export default function HomePage() {
       <section className="home-hero">
         <div className="hero-content">
           <div className="hero-badge">
-            <Sparkles size={13} className="hero-sparkle" />
+            <AppLogoIcon size={13} className="hero-sparkle" />
             <span>AI-Powered Civic Response</span>
           </div>
           <h1 className="hero-title">Hello, {greetingName}</h1>

@@ -12,6 +12,7 @@ import {
   ChevronUp,
   ChevronDown,
   Users,
+  ShieldCheck,
 } from 'lucide-react';
 
 export default function ComplaintTable({ complaints, sortField, sortDir, onSort, onAction }) {
@@ -92,15 +93,25 @@ export default function ComplaintTable({ complaints, sortField, sortDir, onSort,
           ) : (
             complaints.map((complaint) => {
               const isUrgent = !!complaint.urgentEscalation;
+              const isAwaitingVerification = complaint.status === 'completed_pending_verification';
+
               return (
                 <tr
                   key={complaint.id}
-                  className={`table-row ${isUrgent ? 'urgent-highlight-row' : ''}`}
+                  className={`table-row ${isUrgent ? 'urgent-highlight-row' : ''} ${isAwaitingVerification ? 'awaiting-verification-row' : ''}`}
+                  onClick={() => navigate(`/complaint/${complaint.id}`)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && navigate(`/complaint/${complaint.id}`)}
+                  title={`Open incident dossier ${complaint.complaintNumber || complaint.id}`}
                 >
                   <td>
                     <span
                       className="table-complaint-id-link"
-                      onClick={() => navigate(`/complaint/${complaint.id}`)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/complaint/${complaint.id}`);
+                      }}
                       title={`Inspect full report ${complaint.id}`}
                     >
                       {complaint.complaintNumber || complaint.id.slice(0, 8)}
@@ -110,7 +121,10 @@ export default function ComplaintTable({ complaints, sortField, sortDir, onSort,
                     {complaint.imageBase64 ? (
                       <div
                         className="table-thumbnail-box"
-                        onClick={() => navigate(`/complaint/${complaint.id}`)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/complaint/${complaint.id}`);
+                        }}
                       >
                         <img
                           src={`data:image/jpeg;base64,${complaint.imageBase64}`}
@@ -171,15 +185,26 @@ export default function ComplaintTable({ complaints, sortField, sortDir, onSort,
                     {getAge(complaint.timestamp)}
                   </td>
                   <td>
-                    <div className="table-action-btns">
-                      <button
-                        className="btn btn-small btn-primary"
-                        onClick={() => onAction(complaint)}
-                        title="Open Dispatch & Team Assignment"
-                      >
-                        <Send size={12} />
-                        <span>Dispatch</span>
-                      </button>
+                    <div className="table-action-btns" onClick={(e) => e.stopPropagation()}>
+                      {isAwaitingVerification ? (
+                        <button
+                          className="btn btn-small btn-verify-cta"
+                          onClick={() => navigate(`/complaint/${complaint.id}`)}
+                          title="Review Completion Evidence & Verify"
+                        >
+                          <ShieldCheck size={13} />
+                          <span>Verify</span>
+                        </button>
+                      ) : (
+                        <button
+                          className="btn btn-small btn-primary"
+                          onClick={() => onAction(complaint)}
+                          title="Open Dispatch & Team Assignment"
+                        >
+                          <Send size={12} />
+                          <span>Dispatch</span>
+                        </button>
+                      )}
                       <button
                         className="btn btn-small btn-secondary"
                         onClick={() => navigate(`/complaint/${complaint.id}`)}

@@ -5,7 +5,8 @@ import { WASTE_TYPES, VOLUMES, LOCATION_SENSITIVITIES } from '../config/constant
  * Analyze a waste image using the Gemini API.
  *
  * Sends the image as inline Base64 data and requests structured JSON
- * classification of waste type, volume, confidence, and location sensitivity.
+ * classification of waste type, volume, confidence, location sensitivity,
+ * and bio-waste risk detection.
  *
  * @param {string} base64Data - The Base64-encoded image (without the data:image/... prefix)
  * @param {string} mimeType - The MIME type of the image (e.g. 'image/jpeg')
@@ -29,15 +30,17 @@ The JSON must have exactly these fields:
   "volumeEstimate": "one of: ${VOLUMES.join(', ')}",
   "confidence": <number between 0.0 and 1.0>,
   "locationSensitivityHint": "one of: ${LOCATION_SENSITIVITIES.join(', ')}",
+  "bioWasteRisk": <true or false>,
   "reasoning": "<brief explanation of your classification>"
 }
 
 Rules:
-- wasteType must be exactly one of the listed values
-- volumeEstimate must be exactly one of the listed values
+- wasteType must be exactly one of the listed values: ${WASTE_TYPES.join(', ')}
+- volumeEstimate must be exactly one of the listed values: ${VOLUMES.join(', ')}
 - confidence is your certainty in the classification (0.0 = not sure, 1.0 = certain)
 - locationSensitivityHint: infer from visual cues (school signs, hospital, water, drains). Use "none" if unclear.
-- reasoning: 1-2 sentences explaining your classification
+- bioWasteRisk: Set true ONLY when visible evidence suggests biological waste, medical/clinical waste, animal carcasses/waste, or potentially infectious biological material. Set false for ordinary organic waste (food scraps, leaves, vegetable peels).
+- reasoning: 1-2 sentences explaining your classification and whether bio-waste risk was detected
 
 If the image does not show waste or a sanitation issue, still return valid JSON with your best guess, low confidence, and explain in reasoning.`;
 
@@ -113,6 +116,7 @@ function validateGeminiResult(result) {
     locationSensitivityHint: LOCATION_SENSITIVITIES.includes(result.locationSensitivityHint)
       ? result.locationSensitivityHint
       : 'none',
+    bioWasteRisk: Boolean(result.bioWasteRisk),
     reasoning: typeof result.reasoning === 'string'
       ? result.reasoning
       : 'No reasoning provided.',

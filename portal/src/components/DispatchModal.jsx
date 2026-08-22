@@ -1,15 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { updateComplaint } from '../services/complaintService.js';
 import { getActiveTeams, updateTeamLoad } from '../services/teamService.js';
+import { recommendDispatch, getTeamWithZone } from '../services/dispatchRecommendationService.js';
 import { STATUSES, STATUS_LABELS, WASTE_TYPE_LABELS, TEAM_TYPE_LABELS } from '../config/constants.js';
-import { Bot, ShieldCheck, Check, Edit3, Send, X, AlertTriangle, Users, Truck, Clock } from 'lucide-react';
+import {
+  Bot,
+  ShieldCheck,
+  Check,
+  Edit3,
+  Send,
+  X,
+  AlertTriangle,
+  Users,
+  Truck,
+  Clock,
+  Compass,
+  MapPin,
+  Activity,
+  CheckCircle2,
+} from 'lucide-react';
 
 /**
- * Dispatch modal with AI recommendation panel and accept/override flow.
+ * Dispatch modal with Smart Dispatch Recommendation and accept/override flow.
  *
- * Shows the AI-recommended intervention at the top.
- * Municipal operator can accept it (pre-fill the form) or override manually.
- * Clearly separates AI Recommendation and Final Municipal Decision.
+ * Shows:
+ * 1. AI Recommended Intervention (action, vehicle, workers, time)
+ * 2. Smart Dispatch Recommendation (which specific team based on capability, proximity, workload)
+ * 3. Final Municipal Decision (manual assignment & override)
  */
 export default function DispatchModal({ complaint, onClose }) {
   const rec = complaint?.recommendedIntervention;
@@ -26,15 +43,26 @@ export default function DispatchModal({ complaint, onClose }) {
 
   useEffect(() => {
     getActiveTeams()
-      .then(setTeams)
+      .then((rawTeams) => {
+        const enriched = (rawTeams || []).map(getTeamWithZone);
+        setTeams(enriched);
+      })
       .catch((err) => console.error('Failed to load teams:', err))
       .finally(() => setTeamsLoading(false));
   }, []);
 
+  // Compute smart dispatch recommendation
+  const smartDispatch = recommendDispatch({ complaint, teams });
+
   const handleAcceptRecommendation = () => {
-    // Pre-fill dispatch fields from recommendation
-    const matchingTeam = teams.find((t) => t.type === rec?.teamType);
-    if (matchingTeam) setAssignedTeam(matchingTeam.id);
+    // Pre-fill dispatch fields from smart dispatch engine + AI intervention
+    if (smartDispatch.success && smartDispatch.recommendedTeamId) {
+      setAssignedTeam(smartDispatch.recommendedTeamId);
+    } else {
+      const fallbackTeam = teams.find((t) => t.type === rec?.teamType);
+      if (fallbackTeam) setAssignedTeam(fallbackTeam.id);
+    }
+
     setAssignedVehicle(rec?.vehicle || '');
     setMode('dispatch');
   };
@@ -78,7 +106,7 @@ export default function DispatchModal({ complaint, onClose }) {
       <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <div className="modal-header-title">
-            <h3>Dispatch & Operations Routing</h3>
+            <h3>Dispatch &amp; Operations Routing</h3>
             <span className="modal-id-tag">{complaint.complaintNumber || complaint.id.slice(0, 8)}</span>
           </div>
           <button className="modal-close" onClick={onClose} disabled={saving} aria-label="Close modal">
@@ -101,76 +129,122 @@ export default function DispatchModal({ complaint, onClose }) {
           {success && (
             <div className="dispatch-success">
               <Check size={16} />
-              <span>Assignment saved & field status updated!</span>
+              <span>Assignment saved &amp; field status updated!</span>
             </div>
           )}
 
           {error && <div className="modal-error">{error}</div>}
 
-          {/* ── 1. AI RECOMMENDATION SECTION ──────────────────────── */}
-          {mode === 'recommendation' && rec && (
-            <div className="modal-section-box rec-box">
-              <div className="section-badge-top rec-badge">
-                <Bot size={14} />
-                <span>AI RECOMMENDATION</span>
+          {/* ── 1. AI & SMART DISPATCH RECOMMENDATION SECTION ──────── */}
+          {mode === 'recommendation' && (
+            <>
+              {rec && (
+                <div className="modal-section-box rec-box">
+                  <div className="section-badge-top rec-badge">
+                    <Bot size={14} />
+                    <span>AI ADVISORY RECOMMENDATION</span>
+                  </div>
+
+                  <p className="rec-action-line">{rec.recommendedAction}</p>
+
+                  <div className="rec-specs-grid-modal">
+                    <div className="rec-cell">
+                      <span className="cell-k">Required Capability</span>
+                      <strong className="cell-v">{TEAM_TYPE_LABELS[rec.teamType] || rec.teamType}</strong>
+                    </div>
+                    <div className="rec-cell">
+                      <span className="cell-k">Vehicle Unit</span>
+                      <strong className="cell-v">{rec.vehicle}</strong>
+                    </div>
+                    <div className="rec-cell">
+                      <span className="cell-k">Crew Requirement</span>
+                      <strong className="cell-v">{rec.workerCount} Workers</strong>
+                    </div>
+                    <div className="rec-cell">
+                      <span className="cell-k">Est. Cleanup</span>
+                      <strong className="cell-v">{rec.estimatedCleanupTime}</strong>
+                    </div>
+                  </div>
+
+                  <p className="rec-reasoning-line">
+                    <strong>Decision Logic:</strong> {rec.reasoning}
+                  </p>
+                </div>
+              )}
+
+              {/* ── SMART DISPATCH UNIT RECOMMENDATION ──────────────── */}
+              <div className="modal-section-box smart-dispatch-box" style={{ marginTop: '12px' }}>
+                <div className="section-badge-top smart-dispatch-badge">
+                  <Compass size={14} />
+                  <span>SMART DISPATCH RECOMMENDATION</span>
+                </div>
+
+                {smartDispatch.success ? (
+                  <div className="smart-dispatch-details">
+                    <div className="smart-dispatch-grid">
+                      <div className="smart-dispatch-item">
+                        <span className="smart-k">Recommended Team</span>
+                        <strong className="smart-v text-emerald">{smartDispatch.recommendedTeamName}</strong>
+                        <span className="smart-sub-k">{smartDispatch.primaryZone}</span>
+                      </div>
+                      <div className="smart-dispatch-item">
+                        <span className="smart-k">Approximate Proximity</span>
+                        <strong className="smart-v">
+                          {smartDispatch.approximateDistanceKm != null
+                            ? `~${smartDispatch.approximateDistanceKm} km`
+                            : 'Within Primary Zone'}
+                        </strong>
+                        <span className="smart-sub-k">Straight-line distance</span>
+                      </div>
+                      <div className="smart-dispatch-item">
+                        <span className="smart-k">Current Active Jobs</span>
+                        <strong className="smart-v">
+                          {smartDispatch.currentLoad || 0} active job{(smartDispatch.currentLoad || 0) !== 1 ? 's' : ''}
+                        </strong>
+                        <span className="smart-sub-k">Unit capacity</span>
+                      </div>
+                    </div>
+
+                    <div className="smart-dispatch-reasons">
+                      <span className="smart-reasons-title">Why this team?</span>
+                      <ul className="smart-reasons-list">
+                        {smartDispatch.reasoning.map((r, i) => (
+                          <li key={i}>{r}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="smart-dispatch-unavailable">
+                    <p className="smart-unavail-msg">
+                      ⚠️ {smartDispatch.message || 'No suitable active team currently available.'}
+                    </p>
+                  </div>
+                )}
+
+                <div className="modal-rec-actions" style={{ marginTop: '16px' }}>
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleAcceptRecommendation}
+                    disabled={teamsLoading}
+                  >
+                    <Check size={15} />
+                    <span>Accept Recommendation</span>
+                  </button>
+                  <button
+                    className="btn btn-secondary"
+                    onClick={handleOverride}
+                  >
+                    <Edit3 size={15} />
+                    <span>Override Manually</span>
+                  </button>
+                </div>
+
+                <p className="modal-disclaimer">
+                  Smart dispatch recommendations are advisory. Municipal operators hold final assignment authority.
+                </p>
               </div>
-
-              <p className="rec-action-line">{rec.recommendedAction}</p>
-
-              <div className="rec-specs-grid-modal">
-                <div className="rec-cell">
-                  <span className="cell-k">Team Type</span>
-                  <strong className="cell-v">{TEAM_TYPE_LABELS[rec.teamType] || rec.teamType}</strong>
-                </div>
-                <div className="rec-cell">
-                  <span className="cell-k">Vehicle</span>
-                  <strong className="cell-v">{rec.vehicle}</strong>
-                </div>
-                <div className="rec-cell">
-                  <span className="cell-k">Workers</span>
-                  <strong className="cell-v">{rec.workerCount} Workers</strong>
-                </div>
-                <div className="rec-cell">
-                  <span className="cell-k">Est. Cleanup</span>
-                  <strong className="cell-v">{rec.estimatedCleanupTime}</strong>
-                </div>
-              </div>
-
-              <p className="rec-reasoning-line">
-                <strong>Reasoning:</strong> {rec.reasoning}
-              </p>
-
-              <div className="modal-rec-actions">
-                <button
-                  className="btn btn-primary"
-                  onClick={handleAcceptRecommendation}
-                  disabled={teamsLoading}
-                >
-                  <Check size={15} />
-                  <span>Accept Recommendation</span>
-                </button>
-                <button
-                  className="btn btn-secondary"
-                  onClick={handleOverride}
-                >
-                  <Edit3 size={15} />
-                  <span>Override Manually</span>
-                </button>
-              </div>
-
-              <p className="modal-disclaimer">
-                AI recommendations are advisory. Municipal operators hold final authority.
-              </p>
-            </div>
-          )}
-
-          {mode === 'recommendation' && !rec && (
-            <div className="no-recommendation-box">
-              <p>No AI recommendation stored for this complaint.</p>
-              <button className="btn btn-secondary" onClick={handleOverride}>
-                Proceed to Manual Dispatch →
-              </button>
-            </div>
+            </>
           )}
 
           {/* ── 2. FINAL MUNICIPAL DECISION SECTION ───────────────── */}
@@ -181,15 +255,13 @@ export default function DispatchModal({ complaint, onClose }) {
                 <span>FINAL MUNICIPAL DECISION</span>
               </div>
 
-              {rec && (
-                <button
-                  type="button"
-                  className="btn-link back-to-rec"
-                  onClick={() => setMode('recommendation')}
-                >
-                  ← View AI Recommendation
-                </button>
-              )}
+              <button
+                type="button"
+                className="btn-link back-to-rec"
+                onClick={() => setMode('recommendation')}
+              >
+                ← View Smart Recommendation
+              </button>
 
               <div className="form-group">
                 <label htmlFor="dispatch-team">
@@ -205,7 +277,7 @@ export default function DispatchModal({ complaint, onClose }) {
                   <option value="">— Select Operational Unit —</option>
                   {teams.map((team) => (
                     <option key={team.id} value={team.id}>
-                      {team.name} ({TEAM_TYPE_LABELS[team.type] || team.type}) — Active Load: {team.currentLoad || 0}
+                      {team.name} ({TEAM_TYPE_LABELS[team.type] || team.type}) — {team.zoneShort || team.primaryZone} [Load: {team.currentLoad || 0}]
                     </option>
                   ))}
                 </select>

@@ -1,7 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { getActiveTeams } from '../services/teamService.js';
+import { getTeamWithZone } from '../services/dispatchRecommendationService.js';
 import { TEAM_TYPE_LABELS } from '../config/constants.js';
-import { Truck, Recycle, Users, Activity, CheckCircle2, XCircle } from 'lucide-react';
+import {
+  Truck,
+  Recycle,
+  Users,
+  Activity,
+  CheckCircle2,
+  XCircle,
+  MapPin,
+  Compass,
+} from 'lucide-react';
 
 export default function TeamsPage() {
   const [teams, setTeams] = useState([]);
@@ -10,7 +20,10 @@ export default function TeamsPage() {
 
   useEffect(() => {
     getActiveTeams()
-      .then((data) => setTeams(data || []))
+      .then((data) => {
+        const enriched = (data || []).map(getTeamWithZone);
+        setTeams(enriched);
+      })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, []);
@@ -38,7 +51,7 @@ export default function TeamsPage() {
       <div className="page-header">
         <h2>Operational Response Teams</h2>
         <p className="page-subtitle">
-          Real-time workload and availability of municipal cleanup units and partner fleets.
+          Real-time workload, capability, and primary operational zones of municipal cleanup units and partner fleets.
         </p>
       </div>
 
@@ -80,12 +93,21 @@ export default function TeamsPage() {
 
               <div className="team-meta-box">
                 <div className="team-meta-row">
+                  <span className="meta-k">Primary Operational Zone:</span>
+                  <div className="zone-pill-box">
+                    <MapPin size={12} className="text-emerald" />
+                    <span className="team-zone-val">{team.primaryZone}</span>
+                  </div>
+                </div>
+
+                <div className="team-meta-row">
                   <span className="meta-k">Current Dispatch Load:</span>
                   <span className={`load-indicator ${getLoadBadgeClass(team.currentLoad || 0)}`}>
                     <Activity size={12} />
                     <span>{team.currentLoad || 0} active task{(team.currentLoad || 0) !== 1 ? 's' : ''}</span>
                   </span>
                 </div>
+
                 <div className="team-meta-row">
                   <span className="meta-k">Unit ID:</span>
                   <code className="team-id-code">{team.id}</code>
@@ -93,9 +115,12 @@ export default function TeamsPage() {
               </div>
 
               <div className="team-footer-note">
-                {team.type === 'mini_truck' && 'Equipped for large volume accumulation & heavy rubble'}
-                {team.type === 'recycling_partner' && 'Routes segregated plastic & e-waste for material recovery'}
-                {team.type === 'manual_cleanup' && 'Standard manual sweeping crew & local bin clearance'}
+                {team.capabilityDescription ||
+                  (team.type === 'mini_truck'
+                    ? 'Equipped for large volume accumulation & heavy rubble'
+                    : team.type === 'recycling_partner'
+                    ? 'Routes segregated plastic & e-waste for material recovery'
+                    : 'Standard manual sweeping crew & local bin clearance')}
               </div>
             </div>
           ))}

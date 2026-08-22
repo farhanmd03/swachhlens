@@ -1,13 +1,14 @@
 import React from 'react';
-import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
+import { MapContainer, TileLayer, CircleMarker, Circle, Popup } from 'react-leaflet';
 import { useNavigate } from 'react-router-dom';
 import { PRIORITY_THRESHOLDS, WASTE_TYPE_LABELS, STATUS_LABELS } from '../config/constants.js';
-import { MapPin, Send, ArrowRight, AlertTriangle } from 'lucide-react';
+import { MapPin, Send, ArrowRight, AlertTriangle, Flame } from 'lucide-react';
 
 /**
- * Leaflet map displaying active complaint markers color-coded by priority with legend.
+ * Leaflet map displaying active complaint markers color-coded by priority
+ * and subtle geographic concentration hotspot zone overlays.
  */
-export default function ComplaintMap({ complaints, onMarkerClick }) {
+export default function ComplaintMap({ complaints, hotspots = [], onMarkerClick }) {
   const navigate = useNavigate();
 
   // Filter complaints with valid GPS
@@ -21,7 +22,7 @@ export default function ComplaintMap({ complaints, onMarkerClick }) {
           validComplaints.reduce((sum, c) => sum + c.gps.lat, 0) / validComplaints.length,
           validComplaints.reduce((sum, c) => sum + c.gps.lng, 0) / validComplaints.length,
         ]
-      : [28.6315, 77.2167]; // Default to New Delhi center
+      : [22.5726, 88.3639]; // Default to Kolkata center
 
   const getMarkerColor = (score, urgent) => {
     if (urgent) return '#dc2626';
@@ -36,10 +37,11 @@ export default function ComplaintMap({ complaints, onMarkerClick }) {
         <div className="map-title-info">
           <div className="map-title-row">
             <MapPin size={18} className="map-pin-icon" />
-            <h4>Live Incident Geolocation</h4>
+            <h4>Live Incident Geolocation & Concentration Zones</h4>
           </div>
           <span className="map-count-badge">
-            {validComplaints.length} active location{validComplaints.length !== 1 ? 's' : ''} mapped
+            {validComplaints.length} active incident{validComplaints.length !== 1 ? 's' : ''} mapped
+            {hotspots.length > 0 && ` • ${hotspots.length} hotspot zones`}
           </span>
         </div>
 
@@ -57,6 +59,9 @@ export default function ComplaintMap({ complaints, onMarkerClick }) {
           <span className="legend-item">
             <span className="legend-dot dot-low"></span> Low (&lt;40)
           </span>
+          <span className="legend-item">
+            <span className="legend-dot dot-hotspot"></span> Hotspot Cluster
+          </span>
         </div>
       </div>
 
@@ -65,12 +70,42 @@ export default function ComplaintMap({ complaints, onMarkerClick }) {
           center={center}
           zoom={12}
           scrollWheelZoom={false}
-          style={{ height: '420px', width: '100%', borderRadius: '8px' }}
+          style={{ height: '440px', width: '100%', borderRadius: '8px' }}
         >
           <TileLayer
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+
+          {/* ── Hotspot Concentration Overlays ────────────────── */}
+          {hotspots.map((hs) => (
+            <Circle
+              key={hs.hotspotId}
+              center={[hs.centerLat, hs.centerLng]}
+              radius={600}
+              pathOptions={{
+                color: hs.urgentCount > 0 ? '#dc2626' : '#f59e0b',
+                fillColor: hs.urgentCount > 0 ? '#ef4444' : '#fbbf24',
+                fillOpacity: 0.12,
+                weight: 1.8,
+                dashArray: '5, 5',
+              }}
+            >
+              <Popup>
+                <div className="hotspot-map-popup">
+                  <div className="hotspot-popup-header">
+                    <Flame size={14} className="text-amber" />
+                    <strong>{hs.areaName}</strong>
+                  </div>
+                  <p>Concentration: <strong>{hs.reportCount} reports</strong></p>
+                  <p>Unresolved: <strong>{hs.unresolvedCount}</strong></p>
+                  <p>Dominant: <strong>{hs.dominantWasteLabel}</strong></p>
+                </div>
+              </Popup>
+            </Circle>
+          ))}
+
+          {/* ── Active Incident Markers ───────────────────────── */}
           {validComplaints.map((complaint) => {
             const isUrgent = !!complaint.urgentEscalation;
             const color = getMarkerColor(complaint.priorityScore, isUrgent);
@@ -83,7 +118,7 @@ export default function ComplaintMap({ complaints, onMarkerClick }) {
                 fillColor={color}
                 color={isUrgent ? '#ffffff' : '#334155'}
                 weight={isUrgent ? 3 : 1.5}
-                fillOpacity={0.85}
+                fillOpacity={0.88}
               >
                 <Popup>
                   <div className="map-popup-card">

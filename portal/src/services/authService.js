@@ -1,6 +1,7 @@
 import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
+  sendPasswordResetEmail,
 } from 'firebase/auth';
 import { auth } from '../config/firebase.js';
 
@@ -13,6 +14,16 @@ import { auth } from '../config/firebase.js';
  */
 export async function signIn(email, password) {
   return signInWithEmailAndPassword(auth, email, password);
+}
+
+/**
+ * Send password reset email to a municipal user.
+ *
+ * @param {string} email
+ * @returns {Promise<void>}
+ */
+export async function resetPassword(email) {
+  return sendPasswordResetEmail(auth, email);
 }
 
 /**

@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="swl-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#047857"/>
+    </linearGradient>
+  </defs>
+
+  <!-- App Icon Background (Emerald Rounded Square) -->
+  <rect width="64" height="64" rx="14" fill="url(#swl-grad)"/>
+
+  <!-- AI Viewfinder Corner Brackets -->
+  <path d="M14 22 V17 A3 3 0 0 1 17 14 H22" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M42 14 H47 A3 3 0 0 1 50 17 V22" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M14 42 V47 A3 3 0 0 0 17 50 H22" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M42 50 H47 A3 3 0 0 0 50 47 V42" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+
+  <!-- Waste Bin Glyph -->
+  <path d="M22 24 H42" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round"/>
+  <path d="M26 24 V21 A1.5 1.5 0 0 1 27.5 19.5 H36.5 A1.5 1.5 0 0 1 38 21 V24" stroke="#ffffff" stroke-width="2.8" stroke-linecap="round"/>
+  <path d="M24 28 L25.5 42 A2.5 2.5 0 0 0 28 44.5 H36 A2.5 2.5 0 0 0 38.5 42 L40 28" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M32 30.5 V39.5" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+</svg>

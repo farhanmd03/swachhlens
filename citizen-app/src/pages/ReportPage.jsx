@@ -7,9 +7,10 @@ import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import PriorityExplainer from '../components/PriorityExplainer.jsx';
 import InterventionCard from '../components/InterventionCard.jsx';
 import { compressImage } from '../services/imageCompressor.js';
+import { computeImageHash } from '../services/imageHash.js';
 import { getCurrentPosition } from '../services/geolocation.js';
 import { analyzeWasteImage } from '../services/gemini.js';
-import { findDuplicate } from '../services/duplicateDetection.js';
+import { findDuplicateEvidence } from '../services/duplicateDetection.js';
 import { calculatePriority, calculateUrgentEscalation } from '../services/priorityCalculator.js';
 import { createComplaint } from '../services/complaintService.js';
 import { getInterventionRecommendation } from '../services/interventionRecommendation.js';
@@ -32,6 +33,8 @@ import {
   PlusCircle,
   FileCheck,
   Bot,
+  AlertTriangle,
+  Biohazard,
 } from 'lucide-react';
 
 const DEMO_LOCATION = { lat: 28.6315, lng: 77.2167 };
@@ -54,6 +57,7 @@ export default function ReportPage() {
   const [imageFile, setImageFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState(null);
   const [compressedData, setCompressedData] = useState(null);
+  const [imageHash, setImageHash] = useState(null);
   const [gps, setGps] = useState(null);
   const [gpsIsDemo, setGpsIsDemo] = useState(false);
   const [aiResult, setAiResult] = useState(null);
@@ -84,6 +88,7 @@ export default function ReportPage() {
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       setPreviewUrl(null);
       setCompressedData(null);
+      setImageHash(null);
       setAiResult(null);
       setRecommendation(null);
       setGps(null);
@@ -103,59 +108,81 @@ export default function ReportPage() {
     setError(null);
     setLocationError(null);
 
-    // Step 1: Compress
+    // Step 1: Compress & Compute Perceptual Hash
     setStep(STEPS.COMPRESSING);
     let compressed;
+    let computedHash = null;
     try {
       compressed = await compressImage(imageFile);
+      computedHash = await computeImageHash(compressed.base64, compressed.mimeType);
     } catch (e) {
       setError(`Image compression failed: ${e.message}`);
       setStep(STEPS.ERROR);
       return;
     }
     setCompressedData(compressed);
+    setImageHash(computedHash);
 
     // Step 2: GPS
-    await doGetLocation(compressed);
+    await doGetLocation(compressed, computedHash);
   };
 
-  const doGetLocation = async (compressed) => {
+  const doGetLocation = async (compressed, computedHash) => {
     setStep(STEPS.LOCATING);
     setLocationError(null);
     try {
       const position = await getCurrentPosition();
       setGps(position);
       setGpsIsDemo(false);
-      await doAnalyze(compressed || compressedData, position);
+      await doAnalyze(compressed || compressedData, position, computedHash || imageHash);
     } catch (gpsErr) {
       setLocationError(gpsErr.message);
       setStep(STEPS.LOCATION_ERROR);
     }
   };
 
-  const handleRetryLocation = () => doGetLocation(compressedData);
+  const handleRetryLocation = () => doGetLocation(compressedData, imageHash);
 
   const handleUseDemoLocation = async () => {
     setGps(DEMO_LOCATION);
     setGpsIsDemo(true);
-    await doAnalyze(compressedData, DEMO_LOCATION);
+    await doAnalyze(compressedData, DEMO_LOCATION, imageHash);
   };
 
-  const doAnalyze = async (compressed, position) => {
+  const doAnalyze = async (compressed, position, computedHash) => {
     try {
       setStep(STEPS.ANALYZING);
-      setAnalysisStage('Classifying waste category & estimating volume...');
+      setAnalysisStage('Classifying waste category, volume & biohazard risks...');
 
       const result = await analyzeWasteImage(compressed.base64, compressed.mimeType);
       setAiResult(result);
 
-      // Get recommendation
+      // Get recommendation with bio-waste awareness
       const rec = getInterventionRecommendation({
         wasteType: result.wasteType,
         volumeEstimate: result.volumeEstimate,
         locationSensitivityHint: result.locationSensitivityHint,
+        bioWasteRisk: result.bioWasteRisk,
       });
       setRecommendation(rec);
+
+      // Compute priority score preview
+      try {
+        const pRes = await calculatePriority({
+          volumeEstimate: result.volumeEstimate,
+          locationSensitivityHint: result.locationSensitivityHint,
+          gps: position,
+          timestamp: Date.now(),
+          wasteType: result.wasteType,
+          bioWasteRisk: result.bioWasteRisk,
+        });
+        setPriorityScore(pRes.priorityScore);
+        setPriorityReasons(pRes.priorityReasons);
+      } catch {
+        const vw = VOLUME_WEIGHTS[result.volumeEstimate] ?? 0.5;
+        const lw = LOCATION_SENSITIVITY_WEIGHTS[result.locationSensitivityHint] ?? 0;
+        setPriorityScore(Math.round(vw * 40 + lw * 30 + (result.bioWasteRisk ? 15 : 0)));
+      }
 
       setStep(STEPS.REVIEW);
     } catch (aiErr) {
@@ -177,8 +204,8 @@ export default function ReportPage() {
       if (!aiResult) throw new Error('AI analysis missing. Please re-analyze.');
 
       // Priority calculation (non-fatal)
-      let score = 0;
-      let reasons = [];
+      let score = priorityScore ?? 50;
+      let reasons = priorityReasons;
       try {
         const res = await calculatePriority({
           volumeEstimate: aiResult.volumeEstimate,
@@ -186,29 +213,28 @@ export default function ReportPage() {
           gps,
           timestamp,
           wasteType: aiResult.wasteType,
+          bioWasteRisk: aiResult.bioWasteRisk,
         });
         score = res.priorityScore;
         reasons = res.priorityReasons;
       } catch (e) {
         console.warn('Priority calculation fallback:', e.message);
-        const vw = VOLUME_WEIGHTS[aiResult.volumeEstimate] ?? 0.5;
-        const lw = LOCATION_SENSITIVITY_WEIGHTS[aiResult.locationSensitivityHint] ?? 0;
-        score = Math.round(vw * 40 + lw * 30);
       }
       setPriorityScore(score);
       setPriorityReasons(reasons);
 
-      // Duplicate check (non-fatal)
-      let isDuplicateOf = null;
+      // Multi-factor duplicate check with image similarity (non-fatal)
+      let dupEvidence = { isDuplicate: false, duplicateOf: null };
       try {
-        isDuplicateOf = await findDuplicate(aiResult.wasteType, gps);
+        dupEvidence = await findDuplicateEvidence(aiResult.wasteType, gps, imageHash);
       } catch (e) {
         console.warn('Duplicate check fallback:', e.message);
       }
 
       const urgentEscalation = calculateUrgentEscalation(
         aiResult.wasteType,
-        aiResult.locationSensitivityHint
+        aiResult.locationSensitivityHint,
+        aiResult.bioWasteRisk
       );
       const complaintNumber = generateComplaintNumber();
       const rec =
@@ -217,6 +243,7 @@ export default function ReportPage() {
           wasteType: aiResult.wasteType,
           volumeEstimate: aiResult.volumeEstimate,
           locationSensitivityHint: aiResult.locationSensitivityHint,
+          bioWasteRisk: aiResult.bioWasteRisk,
         });
 
       const complaintData = {
@@ -225,6 +252,7 @@ export default function ReportPage() {
         citizenPhone: citizenProfile?.phone || '',
         complaintNumber,
         imageBase64: compressedData.base64,
+        imageHash: imageHash || null,
         gps,
         timestamp,
         comment: comment.trim(),
@@ -233,9 +261,11 @@ export default function ReportPage() {
           volumeEstimate: aiResult.volumeEstimate,
           confidence: aiResult.confidence,
           locationSensitivityHint: aiResult.locationSensitivityHint,
+          bioWasteRisk: Boolean(aiResult.bioWasteRisk),
           reasoning: aiResult.reasoning,
         },
-        isDuplicateOf,
+        isDuplicateOf: dupEvidence.isDuplicate ? dupEvidence.duplicateOf : null,
+        duplicateEvidence: dupEvidence.isDuplicate ? dupEvidence : null,
         priorityScore: score,
         priorityReasons: reasons,
         recommendedIntervention: rec,
@@ -266,6 +296,7 @@ export default function ReportPage() {
     setImageFile(null);
     setPreviewUrl(null);
     setCompressedData(null);
+    setImageHash(null);
     setGps(null);
     setGpsIsDemo(false);
     setAiResult(null);
@@ -305,7 +336,7 @@ export default function ReportPage() {
           {previewUrl && (
             <div className="image-ready-notice">
               <Check size={16} className="ready-icon" />
-              <span>Image ready for AI analysis & compression</span>
+              <span>Image ready for AI analysis & fingerprinting</span>
             </div>
           )}
 
@@ -339,7 +370,7 @@ export default function ReportPage() {
 
       {/* ── PROCESSING STATES ─────────────────────────────────── */}
       {step === STEPS.COMPRESSING && (
-        <LoadingSpinner message="Optimizing & compressing image for zero-cost storage..." />
+        <LoadingSpinner message="Optimizing image & generating perceptual fingerprint..." />
       )}
       {step === STEPS.LOCATING && (
         <LoadingSpinner message="Detecting GPS coordinates... (please allow browser access)" />
@@ -396,7 +427,7 @@ export default function ReportPage() {
                 alt="Compressed waste evidence"
                 className="review-image"
               />
-              <span className="image-verified-pill">✓ Compressed for Spark</span>
+              <span className="image-verified-pill">✓ Fingerprinted & Optimized</span>
             </div>
           )}
 
@@ -413,6 +444,13 @@ export default function ReportPage() {
                 {WASTE_TYPE_LABELS[aiResult.wasteType] || aiResult.wasteType}
               </h4>
             </div>
+
+            {aiResult.bioWasteRisk && (
+              <div className="bio-waste-alert-pill">
+                <AlertTriangle size={14} />
+                <span>Biohazard / Clinical Waste Risk Flagged</span>
+              </div>
+            )}
 
             <div className="assessment-grid">
               <div className="assessment-item">
@@ -458,14 +496,27 @@ export default function ReportPage() {
             </div>
           )}
 
-          {/* Location Badge */}
+          {/* ── Photo Geo-Tag & Timestamp Confirmation ────────────── */}
           {gps && (
-            <div className={`gps-status-bar ${gpsIsDemo ? 'gps-status-demo' : ''}`}>
-              <MapPin size={16} className="gps-icon" />
-              <span className="gps-text">
-                GPS: {gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}
-                {gpsIsDemo && <strong> (Demo Test Location)</strong>}
-              </span>
+            <div className={`geotag-confirmation-card ${gpsIsDemo ? 'geotag-demo' : ''}`}>
+              <div className="geotag-main">
+                <div className="geotag-label-row">
+                  <span className="geotag-pin">📍</span>
+                  <span className="geotag-status-text">Location captured</span>
+                  {gpsIsDemo ? (
+                    <span className="geotag-badge demo-badge">DEMO LOCATION</span>
+                  ) : (
+                    <span className="geotag-badge live-badge">LIVE GPS</span>
+                  )}
+                </div>
+                <div className="geotag-coords-val">
+                  {gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}
+                </div>
+                <div className="geotag-timestamp-row">
+                  <span className="geotag-check">✓</span>
+                  <span className="geotag-ts-text">Timestamp attached</span>
+                </div>
+              </div>
             </div>
           )}
 
@@ -499,48 +550,22 @@ export default function ReportPage() {
             </div>
           )}
 
-          {aiResult && (
-            <div className="success-summary-grid">
-              <div className="summary-pill">
-                <span className="pill-lbl">Waste</span>
-                <strong>{WASTE_TYPE_LABELS[aiResult.wasteType] || aiResult.wasteType}</strong>
-              </div>
-              <div className="summary-pill">
-                <span className="pill-lbl">Volume</span>
-                <strong>{VOLUME_LABELS[aiResult.volumeEstimate] || aiResult.volumeEstimate}</strong>
-              </div>
-              <div className="summary-pill">
-                <span className="pill-lbl">Priority</span>
-                <strong>{priorityScore || 0}/100</strong>
-              </div>
-              <div className="summary-pill">
-                <span className="pill-lbl">Status</span>
-                <strong style={{ color: '#059669' }}>Reported</strong>
-              </div>
-            </div>
-          )}
-
-          <div className="success-action-buttons">
-            {submittedId && (
-              <button
-                className="btn btn-primary btn-full"
-                onClick={() => navigate(`/report/${submittedId}`)}
-              >
-                <FileCheck size={18} />
-                <span>Track Complaint Details</span>
-              </button>
-            )}
+          <div className="success-actions-grid">
             <button
-              className="btn btn-outline btn-full"
-              onClick={() => navigate('/my-reports')}
+              className="btn btn-primary btn-full"
+              onClick={() => navigate(`/report/${submittedId}`)}
             >
-              <span>View in My Reports</span>
+              <FileCheck size={16} />
+              <span>Track This Report</span>
             </button>
             <button
               className="btn btn-secondary btn-full"
-              onClick={handleReset}
+              onClick={() => navigate('/my-reports')}
             >
-              <PlusCircle size={18} />
+              <span>View All My Reports</span>
+            </button>
+            <button className="btn btn-tertiary btn-full" onClick={handleReset}>
+              <PlusCircle size={16} />
               <span>Submit Another Report</span>
             </button>
           </div>
@@ -550,15 +575,18 @@ export default function ReportPage() {
       {/* ── ERROR STATE ──────────────────────────────────────── */}
       {step === STEPS.ERROR && (
         <div className="report-flow-card error-card">
-          <div className="error-icon-box">
-            <AlertCircle size={40} className="text-red" />
+          <div className="error-hero-icon">
+            <AlertCircle size={48} className="text-red" />
           </div>
-          <h3>Submission Error</h3>
-          <p className="error-message">{error}</p>
+          <h3>Report Submission Failed</h3>
+          <p className="error-description">{error}</p>
           <div className="error-actions">
-            <button className="btn btn-primary" onClick={handleReset}>
+            <button className="btn btn-primary" onClick={handleSubmit}>
               <RotateCcw size={16} />
-              <span>Try Again</span>
+              <span>Retry Submission</span>
+            </button>
+            <button className="btn btn-secondary" onClick={handleReset}>
+              <span>Start Over</span>
             </button>
           </div>
         </div>

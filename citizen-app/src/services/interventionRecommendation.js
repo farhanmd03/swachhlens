@@ -18,6 +18,7 @@
  * @param {string} params.wasteType - One of the known waste type keys
  * @param {string} params.volumeEstimate - 'small' | 'medium' | 'large' | 'very_large'
  * @param {string} params.locationSensitivityHint - Location context key
+ * @param {boolean} [params.bioWasteRisk=false] - Bio-waste risk flag
  * @returns {{
  *   recommendedAction: string,
  *   teamType: string,
@@ -28,7 +29,27 @@
  *   urgent: boolean
  * }}
  */
-export function getInterventionRecommendation({ wasteType, volumeEstimate, locationSensitivityHint }) {
+export function getInterventionRecommendation({
+  wasteType,
+  volumeEstimate,
+  locationSensitivityHint,
+  bioWasteRisk = false,
+}) {
+  // ── Rule 0: Bio-Waste Risk Escalation ───────────────────────────
+  if (bioWasteRisk) {
+    return {
+      recommendedAction: 'Urgent bio-waste containment & sanitized specialized handling',
+      teamType: 'manual_cleanup',
+      vehicle: 'Specialized Hazmat Vehicle',
+      workerCount: 4,
+      estimatedCleanupTime: '60–120 minutes',
+      reasoning:
+        'Potential biological or clinical waste poses direct infection and biohazard risks. ' +
+        'Specialized PPE, biohazard containment bags, and sanitized transport are recommended before general handling.',
+      urgent: true,
+    };
+  }
+
   // ── Rule 1: Hazardous Waste ──────────────────────────────────────
   if (wasteType === 'hazardous_waste') {
     return {

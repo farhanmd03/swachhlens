@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="muni-bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="shield-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#34d399"/>
+      <stop offset="100%" stop-color="#059669"/>
+    </linearGradient>
+  </defs>
+
+  <!-- App Background (Dark Slate Command Center) -->
+  <rect width="64" height="64" rx="14" fill="url(#muni-bg)"/>
+  <rect x="1.5" y="1.5" width="61" height="61" rx="12.5" stroke="#334155" stroke-width="2"/>
+
+  <!-- Municipal Shield Base -->
+  <path d="M32 9 L48 15 V28 C48 39.5 41 48.5 32 53 C23 48.5 16 39.5 16 28 V15 L32 9 Z" fill="url(#shield-grad)"/>
+
+  <!-- AI Viewfinder Scan Brackets on Shield -->
+  <path d="M22 23 V20 A1.5 1.5 0 0 1 23.5 18.5 H26.5" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M37.5 18.5 H40.5 A1.5 1.5 0 0 1 42 20 V23" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M22 36 V39 A1.5 1.5 0 0 0 23.5 40.5 H26.5" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M37.5 40.5 H40.5 A1.5 1.5 0 0 0 42 39 V36" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+
+  <!-- Waste Bin Glyph (Center Emblem) -->
+  <path d="M26 23.5 H38" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M29 23.5 V21.5 A1 1 0 0 1 30 20.5 H34 A1 1 0 0 1 35 21.5 V23.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+  <path d="M27 26.5 L28 36 A2 2 0 0 0 30 38 H34 A2 2 0 0 0 36 36 L37 26.5" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M32 28.5 V34.5" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+</svg>

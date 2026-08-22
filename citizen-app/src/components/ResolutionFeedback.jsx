@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { submitFeedback } from '../services/complaintService.js';
-import { CheckCircle2, AlertTriangle, XCircle, Star } from 'lucide-react';
+import { CheckCircle2, AlertTriangle, XCircle, Star, RotateCcw } from 'lucide-react';
 
 const RESULT_OPTIONS = [
-  { value: 'resolved', label: 'Yes, Resolved', icon: CheckCircle2, className: 'result-resolved' },
+  { value: 'resolved', label: 'Yes, Fully Resolved', icon: CheckCircle2, className: 'result-resolved' },
   { value: 'partial', label: 'Partially Resolved', icon: AlertTriangle, className: 'result-partial' },
   { value: 'not_resolved', label: 'Not Resolved', icon: XCircle, className: 'result-not-resolved' },
 ];
@@ -13,16 +13,29 @@ export default function ResolutionFeedback({ complaintId, onSubmitted }) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [requestReopen, setRequestReopen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const handleSubmit = async () => {
-    if (!result) { setError('Please select a resolution result.'); return; }
-    if (rating === 0) { setError('Please give a rating (1–5 stars).'); return; }
+    if (!result) {
+      setError('Please select a resolution result.');
+      return;
+    }
+    if (rating === 0) {
+      setError('Please give a rating (1–5 stars).');
+      return;
+    }
     setError(null);
     setLoading(true);
+
     try {
-      await submitFeedback(complaintId, { result, rating, comment });
+      await submitFeedback(complaintId, {
+        result,
+        rating,
+        comment: comment.trim(),
+        requestReopen: result === 'not_resolved' ? requestReopen : false,
+      });
       if (onSubmitted) onSubmitted();
     } catch (err) {
       setError(`Failed to submit feedback: ${err.message}`);
@@ -43,7 +56,10 @@ export default function ResolutionFeedback({ complaintId, onSubmitted }) {
               key={opt.value}
               type="button"
               className={`result-option ${opt.className} ${result === opt.value ? 'selected' : ''}`}
-              onClick={() => setResult(opt.value)}
+              onClick={() => {
+                setResult(opt.value);
+                if (opt.value !== 'not_resolved') setRequestReopen(false);
+              }}
               disabled={loading}
             >
               <Icon size={16} />
@@ -52,6 +68,27 @@ export default function ResolutionFeedback({ complaintId, onSubmitted }) {
           );
         })}
       </div>
+
+      {/* Explicit Reopening Request Checkbox for Unresolved Reports */}
+      {result === 'not_resolved' && (
+        <div className="reopen-request-box" style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', padding: '12px', margin: '14px 0' }}>
+          <label style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', cursor: 'pointer', fontSize: '0.85rem', color: '#991b1b', fontWeight: '600' }}>
+            <input
+              type="checkbox"
+              checked={requestReopen}
+              onChange={(e) => setRequestReopen(e.target.checked)}
+              style={{ marginTop: '3px' }}
+              disabled={loading}
+            />
+            <span>
+              Request case reopening for municipal reinspection
+              <small style={{ display: 'block', fontWeight: 'normal', color: '#b91c1c', marginTop: '2px', fontSize: '0.78rem' }}>
+                Flags this incident to municipal operations for supervisor follow-up.
+              </small>
+            </span>
+          </label>
+        </div>
+      )}
 
       <div className="rating-section">
         <p className="rating-label">Rate the response quality (1–5):</p>
@@ -79,7 +116,7 @@ export default function ResolutionFeedback({ complaintId, onSubmitted }) {
           id="feedback-comment"
           value={comment}
           onChange={(e) => setComment(e.target.value)}
-          placeholder="Tell us more about the cleanup quality..."
+          placeholder="Tell us more about the cleanup outcome..."
           rows={3}
           disabled={loading}
         />

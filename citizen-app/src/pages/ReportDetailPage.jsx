@@ -25,6 +25,10 @@ import {
   CheckCircle2,
   AlertTriangle,
   Link2,
+  Biohazard,
+  Fingerprint,
+  ShieldCheck,
+  Check,
 } from 'lucide-react';
 
 export default function ReportDetailPage() {
@@ -80,8 +84,10 @@ export default function ReportDetailPage() {
     assignedVehicle,
     urgentEscalation,
     isDuplicateOf,
+    duplicateEvidence,
     timestamp,
     feedback,
+    completionEvidence,
   } = complaint;
 
   const date = new Date(timestamp).toLocaleString('en-IN', {
@@ -119,6 +125,12 @@ export default function ReportDetailPage() {
               <span className="urgent-tag">
                 <AlertTriangle size={12} />
                 <span>Urgent</span>
+              </span>
+            )}
+            {aiResult?.bioWasteRisk && (
+              <span className="urgent-tag" style={{ background: '#f5f3ff', color: '#7c3aed', borderColor: '#ddd6fe' }}>
+                <Biohazard size={12} />
+                <span>Bio-Risk</span>
               </span>
             )}
             {isDuplicateOf && (
@@ -167,6 +179,75 @@ export default function ReportDetailPage() {
         </div>
       </div>
 
+      {/* ── CLEANUP VERIFICATION (BEFORE / AFTER) ────────────────── */}
+      {completionEvidence && (
+        <div className="detail-section-card cleanup-verification-card">
+          <div className="section-card-header-row">
+            <h3 className="section-card-title">
+              <ShieldCheck size={16} className="text-emerald" />
+              <span>Cleanup Verification</span>
+            </h3>
+            <span className="verification-pill-citizen">
+              <Check size={12} /> Verified by Municipal Operations
+            </span>
+          </div>
+
+          <div className="citizen-before-after-grid">
+            <div className="citizen-comparison-col">
+              <span className="comparison-badge before-badge">BEFORE</span>
+              {imageBase64 ? (
+                <img src={`data:image/jpeg;base64,${imageBase64}`} alt="Before Cleanup" className="comparison-citizen-img" />
+              ) : (
+                <div className="comparison-placeholder">Initial Report Photo</div>
+              )}
+            </div>
+            <div className="citizen-comparison-col">
+              <span className="comparison-badge after-badge">AFTER CLEANUP</span>
+              {completionEvidence.afterImageBase64 ? (
+                <img src={`data:image/jpeg;base64,${completionEvidence.afterImageBase64}`} alt="After Cleanup" className="comparison-citizen-img" />
+              ) : (
+                <div className="comparison-placeholder">Verified by Field Inspection</div>
+              )}
+            </div>
+          </div>
+
+          {completionEvidence.completionNote && (
+            <div className="citizen-completion-note-box">
+              <span className="comp-note-label">Municipal Completion Note:</span>
+              <p className="comp-note-text">"{completionEvidence.completionNote}"</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Duplicate Corroboration Notice ─────────────────────── */}
+      {isDuplicateOf && (
+        <div className="detail-section-card duplicate-notice-card">
+          <div className="dup-notice-top">
+            <Link2 size={16} className="text-emerald" />
+            <h3 className="section-card-title" style={{ margin: 0 }}>
+              Linked Duplicate Report
+            </h3>
+            {duplicateEvidence?.imageSimilarityScore != null && (
+              <span className="similarity-pill-citizen">
+                <Fingerprint size={12} />
+                <span>{duplicateEvidence.imageSimilarityScore}% Visual Match</span>
+              </span>
+            )}
+          </div>
+          <p className="dup-notice-desc">
+            This issue corresponds to an existing report at the same location. It has been grouped to accelerate response.
+          </p>
+          {duplicateEvidence?.reasons && (
+            <ul className="dup-citizen-reasons">
+              {duplicateEvidence.reasons.map((r, i) => (
+                <li key={i}>{r}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
       {/* ── AI Assessment Card ─────────────────────────────────── */}
       {aiResult && (
         <div className="detail-section-card">
@@ -174,6 +255,14 @@ export default function ReportDetailPage() {
             <Bot size={16} />
             <span>AI Waste Assessment</span>
           </h3>
+
+          {aiResult.bioWasteRisk && (
+            <div className="bio-waste-citizen-banner">
+              <Biohazard size={15} />
+              <span>Bio-waste / Clinical risk detected. Escalated for specialized containment.</span>
+            </div>
+          )}
+
           <div className="detail-grid-metrics">
             <div className="metric-box">
               <span className="metric-lbl">Waste Category</span>
@@ -213,7 +302,7 @@ export default function ReportDetailPage() {
       <div className="detail-section-card">
         <h3 className="section-card-title">
           <Zap size={16} />
-          <span>Priority & Escalation</span>
+          <span>Priority &amp; Escalation</span>
         </h3>
         <PriorityExplainer score={priorityScore} reasons={priorityReasons} />
       </div>
@@ -231,7 +320,7 @@ export default function ReportDetailPage() {
       <div className="detail-section-card">
         <h3 className="section-card-title">
           <Users size={16} />
-          <span>Municipal Assignment</span>
+          <span>Municipal Response Unit</span>
         </h3>
         <div className="assignment-grid">
           <div className="assignment-item">
@@ -244,12 +333,6 @@ export default function ReportDetailPage() {
             <span className="assign-lbl">Vehicle Unit</span>
             <span className="assign-val">{assignedVehicle || 'Not assigned'}</span>
           </div>
-          {isDuplicateOf && (
-            <div className="assignment-item full-width">
-              <span className="assign-lbl">Linked Duplicate Issue</span>
-              <code className="duplicate-id-code">{isDuplicateOf}</code>
-            </div>
-          )}
         </div>
       </div>
 
@@ -310,6 +393,11 @@ export default function ReportDetailPage() {
               <div className="feedback-comment-line">
                 <span className="fdbk-label">Comment:</span>
                 <p className="fdbk-comment-text">"{feedback.comment}"</p>
+              </div>
+            )}
+            {feedback.requestReopen && (
+              <div className="feedback-reopen-line" style={{ marginTop: '8px', color: '#dc2626', fontSize: '0.82rem', fontWeight: '700' }}>
+                ⚠️ Reopening Requested by Citizen
               </div>
             )}
             <p className="feedback-timestamp">

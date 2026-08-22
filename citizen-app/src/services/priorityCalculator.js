@@ -22,6 +22,7 @@ import { countNearbyComplaints } from './duplicateDetection.js';
  * @param {string} params.locationSensitivityHint
  * @param {number} params.nearbyCount
  * @param {number} params.hoursOld
+ * @param {boolean} [params.bioWasteRisk]
  * @returns {string[]}
  */
 export function generatePriorityReasons({
@@ -30,6 +31,7 @@ export function generatePriorityReasons({
   locationSensitivityHint,
   nearbyCount,
   hoursOld,
+  bioWasteRisk,
 }) {
   const reasons = [];
 
@@ -67,6 +69,11 @@ export function generatePriorityReasons({
     }
   }
 
+  // Bio-waste risk escalation
+  if (bioWasteRisk) {
+    reasons.push('Potential bio-waste risk (requires specialized containment)');
+  }
+
   return reasons;
 }
 
@@ -83,9 +90,17 @@ export function generatePriorityReasons({
  * @param {{lat: number, lng: number}} params.gps
  * @param {number} params.timestamp
  * @param {string} [params.wasteType] - Optional, used for priority reasons
+ * @param {boolean} [params.bioWasteRisk] - Optional bio-waste risk flag
  * @returns {Promise<{priorityScore: number, reportFrequency: number, priorityReasons: string[]}>}
  */
-export async function calculatePriority({ volumeEstimate, locationSensitivityHint, gps, timestamp, wasteType }) {
+export async function calculatePriority({
+  volumeEstimate,
+  locationSensitivityHint,
+  gps,
+  timestamp,
+  wasteType,
+  bioWasteRisk = false,
+}) {
   const volumeWeight = VOLUME_WEIGHTS[volumeEstimate] ?? 0.50;
   const locationWeight = LOCATION_SENSITIVITY_WEIGHTS[locationSensitivityHint] ?? 0.00;
 
@@ -99,12 +114,17 @@ export async function calculatePriority({ volumeEstimate, locationSensitivityHin
   const hoursOld = (Date.now() - timestamp) / (1000 * 60 * 60);
   const ageWeight = Math.min(hoursOld / 48, 1);
 
-  const priorityScore = Math.round(
+  // If bioWasteRisk is flagged, provide a +15 score boost (capped at 100)
+  const bioRiskBoost = bioWasteRisk ? 15 : 0;
+
+  const rawScore =
     (volumeWeight * 40) +
     (locationWeight * 30) +
     (reportFrequency * 20) +
-    (ageWeight * 10)
-  );
+    (ageWeight * 10) +
+    bioRiskBoost;
+
+  const priorityScore = Math.round(rawScore);
 
   const priorityReasons = generatePriorityReasons({
     wasteType,
@@ -112,6 +132,7 @@ export async function calculatePriority({ volumeEstimate, locationSensitivityHin
     locationSensitivityHint,
     nearbyCount,
     hoursOld,
+    bioWasteRisk,
   });
 
   return {
@@ -126,11 +147,13 @@ export async function calculatePriority({ volumeEstimate, locationSensitivityHin
  *
  * @param {string} wasteType
  * @param {string} locationSensitivityHint
+ * @param {boolean} [bioWasteRisk=false]
  * @returns {boolean}
  */
-export function calculateUrgentEscalation(wasteType, locationSensitivityHint) {
+export function calculateUrgentEscalation(wasteType, locationSensitivityHint, bioWasteRisk = false) {
   return (
     URGENT_WASTE_TYPES.includes(wasteType) ||
-    URGENT_LOCATIONS.includes(locationSensitivityHint)
+    URGENT_LOCATIONS.includes(locationSensitivityHint) ||
+    Boolean(bioWasteRisk)
   );
 }

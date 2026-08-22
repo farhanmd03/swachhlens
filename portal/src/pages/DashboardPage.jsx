@@ -1,12 +1,17 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useLocation } from 'react-router-dom';
 import { subscribeToComplaints } from '../services/complaintService.js';
+import { computeWasteHotspots } from '../services/hotspotService.js';
 import DashboardCards from '../components/DashboardCards.jsx';
+import OperationalAlerts from '../components/OperationalAlerts.jsx';
+import WasteHotspots from '../components/WasteHotspots.jsx';
 import ComplaintMap from '../components/ComplaintMap.jsx';
 import ComplaintTable from '../components/ComplaintTable.jsx';
 import FilterBar from '../components/FilterBar.jsx';
 import DispatchModal from '../components/DispatchModal.jsx';
 
 export default function DashboardPage() {
+  const location = useLocation();
   const [complaints, setComplaints] = useState([]);
   const [firestoreError, setFirestoreError] = useState(null);
   const [filters, setFilters] = useState({
@@ -19,6 +24,20 @@ export default function DashboardPage() {
   const [sortField, setSortField] = useState('priorityScore');
   const [sortDir, setSortDir] = useState('desc');
   const [selectedComplaint, setSelectedComplaint] = useState(null);
+
+  // Handle cross-route section scrolling (e.g. /?section=map or /?section=queue)
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const section = params.get('section');
+    if (section) {
+      setTimeout(() => {
+        const el = document.getElementById(section);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 150);
+    }
+  }, [location.search]);
 
   // Subscribe to real-time Firestore updates
   useEffect(() => {
@@ -36,6 +55,35 @@ export default function DashboardPage() {
     );
     return () => unsubscribe();
   }, []);
+
+  // Compute live geographic concentration hotspots from complaints
+  const hotspots = useMemo(() => {
+    return computeWasteHotspots(complaints, 800);
+  }, [complaints]);
+
+  // Handle one-click alert filter application
+  const handleApplyFilter = (newFilters) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+    const queueEl = document.getElementById('queue');
+    if (queueEl) {
+      queueEl.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Handle one-click hotspot filter
+  const handleSelectHotspot = (hs) => {
+    setFilters({
+      status: 'all',
+      wasteType: 'all',
+      urgentOnly: false,
+      duplicateOnly: false,
+      search: hs.areaName.split('/')[0].trim(),
+    });
+    const queueEl = document.getElementById('queue');
+    if (queueEl) {
+      queueEl.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   // Filter and sort complaints
   const filteredComplaints = useMemo(() => {
@@ -122,12 +170,25 @@ export default function DashboardPage() {
       )}
 
       {/* Real-time KPI summary */}
-      <DashboardCards complaints={complaints} />
+      <DashboardCards complaints={complaints} onApplyFilter={handleApplyFilter} />
 
-      {/* Live Map Section */}
+      {/* Derived Operational Alert Center */}
+      <OperationalAlerts
+        complaints={complaints}
+        onApplyFilter={handleApplyFilter}
+      />
+
+      {/* Live Waste Hotspots Concentration Analysis */}
+      <WasteHotspots
+        hotspots={hotspots}
+        onSelectHotspot={handleSelectHotspot}
+      />
+
+      {/* Live Map Section with Hotspot Overlays */}
       <section className="portal-section" id="map">
         <ComplaintMap
           complaints={complaints.filter((c) => c.status !== 'resolved')}
+          hotspots={hotspots}
           onMarkerClick={setSelectedComplaint}
         />
       </section>

@@ -13,24 +13,42 @@ rules_version = '2';
 // (AI analysis, priority scoring, duplicate detection, recommendation)
 // to a secure server-side service (Cloud Functions or Cloud Run).
 //
-// IMPORTANT: Municipal users are distinguished from citizens by checking
-// !request.auth.token.firebase.sign_in_provider.matches('anonymous').
-// Anonymous sign-in is used for citizens. Email/password is used for
-// municipal portal users. This is a client-trust architecture.
+// MUNICIPAL ROLE DISTINCTION:
+// Municipal users are distinguished from ordinary citizens (both registered
+// and anonymous) by checking for the existence of a `municipalUsers/{uid}`
+// document in Firestore. Only provisioned staff accounts have such
+// a document. Ordinary registered citizens and anonymous guests do NOT have
+// a `municipalUsers/{uid}` document and therefore cannot perform municipal
+// operations regardless of their Firebase Auth sign_in_provider.
 
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Helper: is the user a municipal (non-anonymous) user? ─────
+    // ── Helper: is the user an authorized municipal portal user? ─────────
+    // Municipal status is proven by the existence of a `municipalUsers/{uid}`
+    // document. This document is created only during staff provisioning
+    // and is protected against self-assignment below.
     function isMunicipal() {
       return request.auth != null
-        && request.auth.token.firebase.sign_in_provider != 'anonymous';
+        && exists(/databases/$(database)/documents/municipalUsers/$(request.auth.uid));
     }
 
-    // ── citizens ─────────────────────────────────────────────────
+    // ── municipalUsers ──────────────────────────────────────────────────
+    // Stores authorized municipal portal staff.
+    // Only existing municipal users can read this collection (to verify role).
+    // Writes are forbidden from all clients — records are seeded via
+    // the setup-municipal-user.js script or via the Firebase Console.
+    match /municipalUsers/{userId} {
+      allow read: if request.auth != null && (request.auth.uid == userId || isMunicipal());
+      allow write: if false;
+    }
+
+    // ── citizens ─────────────────────────────────────────────────────────
+    // Covers both registered (email/password) and anonymous citizens.
+    // Citizens can read, create, and update only their own profile.
+    // Municipal users can read any citizen profile for operational purposes.
+    // Demo citizen profiles can also be seeded.
     match /citizens/{citizenId} {
-      // Citizens can read, create, and update only their own profile.
-      // Demo citizen profiles can also be seeded.
       allow read: if request.auth != null
         && (request.auth.uid == citizenId || isMunicipal() || citizenId.matches('demo-citizen-.*'));
       allow create, update: if request.auth != null
@@ -38,13 +56,13 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // ── complaints ───────────────────────────────────────────────
+    // ── complaints ───────────────────────────────────────────────────────
     match /complaints/{complaintId} {
 
       // Any authenticated user can read complaints.
       allow read: if request.auth != null;
 
-      // Citizens can create a complaint that belongs to them.
+      // Citizens (registered or anonymous) can create a complaint that belongs to them.
       // Demo seed script can also create demo complaints.
       allow create: if request.auth != null
         && (
@@ -75,7 +93,7 @@ service cloud.firestore {
         && request.resource.data.urgentEscalation is bool;
 
       // Municipal users can update operational/dispatch fields.
-      // Demo records can also be repaired by seed script.
+      // Demo records can also be repaired by seed script (any auth).
       allow update: if (
         (request.auth != null && (resource.data.citizenId.matches('demo-citizen-.*') || complaintId.matches('demo-complaint-.*')))
         || (
@@ -90,7 +108,7 @@ service cloud.firestore {
           && request.resource.data.urgentEscalation == resource.data.urgentEscalation
           && request.resource.data.isDuplicateOf == resource.data.isDuplicateOf
           // Status must be a valid value
-          && request.resource.data.status in ['reported', 'verified', 'assigned', 'in_progress', 'resolved']
+          && request.resource.data.status in ['reported', 'verified', 'assigned', 'in_progress', 'completed_pending_verification', 'resolved']
         )
       );
 
@@ -112,7 +130,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // ── teams ─────────────────────────────────────────────────────
+    // ── teams ─────────────────────────────────────────────────────────────
     match /teams/{teamId} {
       // Any authenticated user can read teams.
       allow read: if request.auth != null;
@@ -131,7 +149,7 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // ── Deny everything else ──────────────────────────────────────
+    // ── Deny everything else ──────────────────────────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }

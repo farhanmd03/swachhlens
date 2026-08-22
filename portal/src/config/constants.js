@@ -2,6 +2,12 @@
  * Application constants for SwachhLens Municipal Portal
  */
 
+// ── Municipal User Roles ─────────────────────────────────────────
+export const MUNICIPAL_ROLES = {
+  OPERATOR: 'municipal_operator',
+  SUPERVISOR: 'field_supervisor',
+};
+
 // ── Waste Types ─────────────────────────────────────────────────
 export const WASTE_TYPES = [
   'overflowing_bin',
@@ -43,13 +49,21 @@ export const LOCATION_SENSITIVITY_LABELS = {
 };
 
 // ── Complaint Statuses ──────────────────────────────────────────
-export const STATUSES = ['reported', 'verified', 'assigned', 'in_progress', 'resolved'];
+export const STATUSES = [
+  'reported',
+  'verified',
+  'assigned',
+  'in_progress',
+  'completed_pending_verification',
+  'resolved',
+];
 
 export const STATUS_LABELS = {
   reported: 'Reported',
   verified: 'Verified',
   assigned: 'Assigned',
   in_progress: 'In Progress',
+  completed_pending_verification: 'Completed (Awaiting Verification)',
   resolved: 'Resolved',
 };
 
@@ -58,6 +72,7 @@ export const STATUS_COLORS = {
   verified: '#2196f3',
   assigned: '#9c27b0',
   in_progress: '#00bcd4',
+  completed_pending_verification: '#8b5cf6',
   resolved: '#4caf50',
 };
 

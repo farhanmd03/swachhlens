@@ -10,8 +10,9 @@ import {
 
 /**
  * Summary KPI cards showing real-time complaint operations metrics.
+ * Clicking a card filters the Priority Queue table and scrolls down to it.
  */
-export default function DashboardCards({ complaints }) {
+export default function DashboardCards({ complaints, onApplyFilter }) {
   const total = complaints.length;
   const pending = complaints.filter((c) =>
     ['reported', 'verified'].includes(c.status)
@@ -36,6 +37,8 @@ export default function DashboardCards({ complaints }) {
       color: '#0284c7',
       icon: FileText,
       sub: 'Logged in system',
+      filterAction: () =>
+        onApplyFilter?.({ status: 'all', wasteType: 'all', urgentOnly: false, duplicateOnly: false, search: '' }),
     },
     {
       label: 'Urgent Action',
@@ -43,6 +46,8 @@ export default function DashboardCards({ complaints }) {
       color: '#dc2626',
       icon: AlertTriangle,
       sub: 'High risk / hazards',
+      filterAction: () =>
+        onApplyFilter?.({ urgentOnly: true, status: 'all', duplicateOnly: false, wasteType: 'all', search: '' }),
     },
     {
       label: 'Pending Dispatch',
@@ -50,6 +55,8 @@ export default function DashboardCards({ complaints }) {
       color: '#d97706',
       icon: Clock,
       sub: 'Awaiting team',
+      filterAction: () =>
+        onApplyFilter?.({ status: 'reported', urgentOnly: false, duplicateOnly: false, wasteType: 'all', search: '' }),
     },
     {
       label: 'In Progress',
@@ -57,6 +64,8 @@ export default function DashboardCards({ complaints }) {
       color: '#0891b2',
       icon: Wrench,
       sub: 'Field units active',
+      filterAction: () =>
+        onApplyFilter?.({ status: 'in_progress', urgentOnly: false, duplicateOnly: false, wasteType: 'all', search: '' }),
     },
     {
       label: 'Resolved',
@@ -64,6 +73,8 @@ export default function DashboardCards({ complaints }) {
       color: '#059669',
       icon: CheckCircle2,
       sub: 'Cleaned & verified',
+      filterAction: () =>
+        onApplyFilter?.({ status: 'resolved', urgentOnly: false, duplicateOnly: false, wasteType: 'all', search: '' }),
     },
     {
       label: 'Avg Priority',
@@ -71,6 +82,8 @@ export default function DashboardCards({ complaints }) {
       color: '#7c3aed',
       icon: Zap,
       sub: 'Dynamic score',
+      filterAction: () =>
+        onApplyFilter?.({ status: 'all', wasteType: 'all', urgentOnly: false, duplicateOnly: false, search: '' }),
     },
   ];
 
@@ -83,6 +96,11 @@ export default function DashboardCards({ complaints }) {
             key={card.label}
             className="kpi-card"
             style={{ borderTop: `3px solid ${card.color}` }}
+            onClick={card.filterAction}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => e.key === 'Enter' && card.filterAction?.()}
+            title={`Click to filter queue for: ${card.label}`}
           >
             <div className="kpi-top">
               <span className="kpi-label">{card.label}</span>

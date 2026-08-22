@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink, Outlet } from 'react-router-dom';
-import { House, Camera, ClipboardList, UserRound, Sparkles } from 'lucide-react';
+import { House, Camera, ClipboardList, UserRound } from 'lucide-react';
+import AppLogoIcon from './AppLogoIcon.jsx';
 
 /**
  * App shell with mobile-first bottom navigation for the citizen app.
@@ -11,7 +12,7 @@ export default function Layout() {
       <header className="app-header">
         <div className="header-brand">
           <div className="brand-logo-icon">
-            <Sparkles size={18} className="logo-sparkle" />
+            <AppLogoIcon size={18} className="logo-sparkle" />
           </div>
           <div className="brand-text">
             <span className="brand-name">SwachhLens</span>
