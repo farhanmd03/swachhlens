@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   getComplaintById,
+  subscribeToComplaint,
   markJobArrived,
   startJobWork,
   submitJobCompletion,
@@ -86,29 +87,38 @@ export default function SupervisorJobDetailPage({ user }) {
   const [completionNote, setCompletionNote] = useState('');
   const [imagePreview, setImagePreview] = useState(null);
 
-  const loadJob = async () => {
-    try {
-      const data = await getComplaintById(id);
-      if (!data) {
-        setError('Job record not found in Firestore.');
-      } else {
-        // Enforce team ownership check
-        if (user?.teamId && data.assignedTeam && data.assignedTeam !== user.teamId) {
+  useEffect(() => {
+    if (!id) {
+      setError('No job ID provided.');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const unsub = subscribeToComplaint(
+      id,
+      (data) => {
+        if (!data) {
+          setError('Job record not found in Firestore.');
+          setComplaint(null);
+        } else if (user?.teamId && data.assignedTeam && data.assignedTeam !== user.teamId) {
           setError('Access Denied: This job is assigned to another operational unit.');
           setComplaint(null);
         } else {
           setComplaint(data);
+          setError(null);
         }
+        setLoading(false);
+      },
+      (err) => {
+        setError(err.message || 'Failed to load job details.');
+        setLoading(false);
       }
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    );
 
-  useEffect(() => {
-    loadJob();
+    return () => unsub();
   }, [id, user?.teamId]);
 
   const handleMarkArrived = async () => {
@@ -117,7 +127,6 @@ export default function SupervisorJobDetailPage({ user }) {
       setError(null);
       await markJobArrived(complaint.id);
       setSuccessMsg('On-site arrival timestamp recorded.');
-      await loadJob();
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err) {
       setError(`Failed to mark arrived: ${err.message}`);
@@ -132,7 +141,6 @@ export default function SupervisorJobDetailPage({ user }) {
       setError(null);
       await startJobWork(complaint.id);
       setSuccessMsg('Work started! Job status updated to In Progress.');
-      await loadJob();
       setTimeout(() => setSuccessMsg(null), 3000);
     } catch (err) {
       setError(`Failed to start work: ${err.message}`);
@@ -168,7 +176,6 @@ export default function SupervisorJobDetailPage({ user }) {
 
       setShowCompletionModal(false);
       setSuccessMsg('Cleanup submitted for municipal verification!');
-      await loadJob();
       setTimeout(() => setSuccessMsg(null), 4000);
     } catch (err) {
       setError(`Submission failed: ${err.message}`);

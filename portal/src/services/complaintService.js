@@ -43,6 +43,10 @@ export function subscribeToComplaints(onData, onError) {
  * @returns {Function} Unsubscribe function
  */
 export function subscribeToTeamComplaints(teamId, onData, onError) {
+  if (!teamId) {
+    if (onData) onData([]);
+    return () => {};
+  }
   const complaintsRef = collection(db, 'complaints');
   const q = query(
     complaintsRef,
@@ -59,6 +63,36 @@ export function subscribeToTeamComplaints(teamId, onData, onError) {
     },
     (error) => {
       console.error('Firestore team subscription error:', error.code, error.message);
+      if (onError) onError(error);
+    }
+  );
+}
+
+/**
+ * Subscribe to real-time updates for a single complaint.
+ *
+ * @param {string} complaintId
+ * @param {Function} onData
+ * @param {Function} onError
+ * @returns {Function} Unsubscribe function
+ */
+export function subscribeToComplaint(complaintId, onData, onError) {
+  if (!complaintId) {
+    if (onData) onData(null);
+    return () => {};
+  }
+  const docRef = doc(db, 'complaints', complaintId);
+  return onSnapshot(
+    docRef,
+    (snap) => {
+      if (snap.exists()) {
+        onData({ id: snap.id, ...snap.data() });
+      } else {
+        onData(null);
+      }
+    },
+    (error) => {
+      console.error('Firestore complaint subscription error:', error.code, error.message);
       if (onError) onError(error);
     }
   );

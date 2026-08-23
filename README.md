@@ -1,664 +1,363 @@
-# SwachhLens 🔎
+# SwachhLens 🔍
 
-![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=white)
-[![Firebase](https://img.shields.io/badge/Firebase-Auth%20%7C%20Firestore-FFCA28?logo=firebase&logoColor=white)](https://firebase.google.com/)
-![Gemini](https://img.shields.io/badge/Google-Gemini%203.6%20Flash-4285F4?logo=google&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
+[![React 19](https://img.shields.io/badge/React-19.2-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![Vite 6](https://img.shields.io/badge/Vite-6.4-646CFF?logo=vite&logoColor=white)](https://vitejs.dev/)
+[![Firebase](https://img.shields.io/badge/Firebase-Spark%20Tier-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com/)
+[![Google Gemini](https://img.shields.io/badge/Google%20Gemini-3.6%20Flash-4285F4?logo=google&logoColor=white)](https://ai.google.dev/)
+[![Leaflet](https://img.shields.io/badge/Leaflet-1.9-199900?logo=leaflet&logoColor=white)](https://leafletjs.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-059669.svg)](LICENSE)
 
-## AI-Powered Waste Response Decision Support System
+### AI-Powered Waste Response Decision Support System
 
-**Built for TechNova: Igniting Brilliance (Season 3)**  
-**Team TechTitans**  
-**Guru Nanak Institute of Technology, Kolkata**  
-**B.Tech Computer Science & Engineering — 3rd Year**  
-
-### Team TechTitans
-
-- **Md Farhan** — Team Leader
-- **Ayush Kumar Chaudhary**
-- **Junaid Alam**
+> **TechNova: Igniting Brilliance (Season 3)** — Problem Statement 2: *Waste Management & Automated Response Routing*<br/>
+> **Team TechTitans** — Guru Nanak Institute of Technology (GNIT), Kolkata<br/>
+> *Md Farhan (Team Leader) • Ayush Kumar Chaudhary • Junaid Alam*
 
 ---
 
-## 🚮 Problem
-
-Urban waste management is often reactive: citizens report an issue, officials inspect it, and only then decide what manpower, vehicle, or response team is required.
-
-This creates delays and makes it difficult to answer:
-
-- What type of waste is present?
-- How much waste needs to be cleared?
-- Is the complaint a duplicate?
-- Which complaints need urgent escalation?
-- Which team and vehicle should be dispatched?
-- How should limited municipal resources be prioritized?
-
-**SwachhLens** addresses this gap by converting a citizen's waste report into structured, AI-assisted operational intelligence.
-
----
-
-## 💡 Solution
-
-SwachhLens is a mobile-first citizen reporting application and municipal command center that transforms:
-
-```text
-Citizen Report
-      ↓
-Photo + GPS + Description
-      ↓
-Gemini Multimodal Analysis (Gemini 3.6 Flash)
-      ↓
-Waste Type + Volume + Confidence
-      ↓
-Duplicate Detection
-      ↓
-Explainable Priority Score
-      ↓
-Intervention Recommendation
-      ↓
-Municipal Decision
-      ↓
-Team + Vehicle Dispatch
-      ↓
-Resolution
-      ↓
-Citizen Verification & Feedback
-```
-
-The system is designed to help municipalities respond **faster, more transparently, and with better resource allocation**.
-
----
-
-## ✨ Key Features
-
-### Citizen Application
-
-- 📸 Camera/file-based waste reporting
-- 🗜️ Client-side image compression
-- 📍 GPS-based location capture
-- 📝 Optional incident description
-- 🧠 Gemini 3.6 Flash-powered waste classification
-- 📦 AI-assisted volume estimation
-- 🎯 AI confidence and reasoning
-- 🔍 Duplicate detection using category, time and GPS proximity
-- 📊 Explainable priority scoring
-- 🚚 Actionable intervention recommendation
-- 🆔 Human-readable complaint tracking ID
-- 📋 Complaint history and live status tracking
-- 👤 Citizen profile
-- ⭐ Resolution verification and feedback
-- 📱 Mobile-first responsive interface
-
-### Municipal Command Center
-
-- 📊 Real-time operational dashboard
-- 🗺️ Live complaint map using Leaflet + OpenStreetMap
-- 🚨 Urgent complaint identification
-- 📋 Sortable and filterable priority queue
-- 🤖 AI advisory recommendation
-- 👨‍💼 Human-in-the-loop municipal decision making
-- 🚚 Team and vehicle dispatch
-- 👥 Response team and dispatch management
-- 🔄 Complaint lifecycle tracking
-- ⭐ Citizen feedback visibility
-- 🔎 Complaint search and filtering
-
----
-
-## 🧠 AI & Decision-Support Pipeline
-
-SwachhLens separates **AI perception** from **transparent operational logic**.
-
-Gemini handles visual understanding, while priority calculation and intervention recommendations use transparent deterministic rules that municipal operators can inspect and override.
-
-### Gemini 3.6 Flash
-
-Gemini 3.6 Flash analyzes the submitted waste image and provides:
-
-- Waste type
-- Approximate volume
-- Confidence score
-- Location-sensitivity hint
-- Visual reasoning
-
-Supported waste categories:
-
-- Overflowing Bin
-- Garbage Dump
-- Plastic Waste
-- Construction Debris
-- Organic Waste
-- E-Waste
-- Hazardous Waste
-- Drain Blockage
-
-### Intervention Recommendation
-
-A transparent rule-based decision engine converts the AI result into an operational recommendation.
-
-Examples:
-
-```text
-Large waste
-→ Mini Truck + Additional Workers
-
-Plastic / E-Waste
-→ Recycling Partner
-
-Drain Blockage
-→ Urgent Drainage Response
-
-Hazardous Waste
-→ Urgent Specialized Response
-
-Small Ordinary Waste
-→ Manual Cleanup Team
-```
-
-The recommendation is **advisory**. Municipal staff can accept or override it.
-
----
-
-## 🎬 Demo Scenario
-
-1. Citizen creates a profile.
-2. Citizen uploads a waste image and location.
-3. Gemini 3.6 Flash classifies the waste and estimates volume.
-4. SwachhLens calculates priority and recommends an intervention.
-5. The complaint appears in the municipal command center.
-6. The municipal operator accepts or overrides the AI recommendation.
-7. A team and vehicle are assigned.
-8. The complaint progresses to resolution.
-9. The citizen verifies the resolution and submits feedback.
-
----
-
-## 📊 Explainable Priority Scoring
-
-SwachhLens uses a transparent weighted score:
-
-```text
-priorityScore =
-    (volumeWeight × 40)
-  + (locationSensitivity × 30)
-  + (reportFrequency × 20)
-  + (ageOfComplaint × 10)
-```
-
-### Volume Weight
-
-| Volume | Weight |
-| :--- | :--- |
-| Small | 0.25 |
-| Medium | 0.50 |
-| Large | 0.75 |
-| Very Large | 1.00 |
-
-### Location Sensitivity
-
-| Situation | Weight |
-| :--- | :--- |
-| None | 0.00 |
-| Near School | 0.70 |
-| Near Hospital | 0.70 |
-| Near Water Body | 0.70 |
-| Blocking Drainage | 1.00 |
-
-### Report Frequency
-
-Nearby reports within approximately 50 metres during the previous seven days are counted and normalized, with five or more reports reaching the maximum frequency contribution.
-
-### Complaint Age
-
-```text
-hoursSinceReport / 48
-```
-
-capped at `1.0`.
-
-The portal also displays **why a complaint received its priority score**, such as:
-
-```text
-• Large waste volume
-• Near school
-• 3 nearby reports
-• Unresolved for 16 hours
-```
-
-This makes the decision process more transparent than a black-box severity number.
-
----
-
-## 🔍 Duplicate Detection
-
-Potential duplicates are identified using:
-
-- Same waste category
-- Unresolved existing complaint
-- Submission within approximately 48 hours
-- GPS distance ≤ 50 metres
-
-Distance is calculated using the **Haversine formula**.
-
-Duplicate complaints are flagged rather than automatically deleted.
-
----
-
-## 🚨 Urgent Escalation
-
-Urgent escalation is triggered for:
-
-- Hazardous waste
-- Drain blockage
-- Reports near schools
-- Reports near hospitals
-
-These cases receive stronger visual emphasis and higher operational urgency.
-
----
-
-## 🗺️ Live Complaint Map & Operations
-
-The municipal portal provides an interactive Leaflet/OpenStreetMap map with priority-coded markers and urgent indicators — a live operational view of submitted complaints, not a predictive heatmap.
-
-Markers are color-coded by priority:
-
-| Score | Level |
-| :--- | :--- |
-| > 70 | High |
-| 40–70 | Medium |
-| < 40 | Low |
-
-The portal supports:
-
-- complaint search
-- status filtering
-- waste-type filtering
-- urgent-only filtering
-- duplicate-only filtering
-- priority sorting
-- complaint detail inspection
-- dispatch operations
-
----
-
-## 🚚 Human-in-the-Loop Dispatch
-
-SwachhLens clearly separates:
-
-### AI Recommendation
-
-```text
-Suggested Team
-Vehicle
-Worker Count
-Estimated Cleanup Time
-Reasoning
-```
-
-from:
-
-### Final Municipal Decision
-
-```text
-Selected Team
-Selected Vehicle
-Worker Count
-Final Status
-```
-
-The AI does not autonomously dispatch municipal resources.
-
-The final decision remains with the authorized municipal operator.
-
----
-
-## 🔄 Complaint Lifecycle
-
-```text
-Reported
-   ↓
-Verified
-   ↓
-Assigned
-   ↓
-In Progress
-   ↓
-Resolved
-   ↓
-Citizen Verification
-   ↓
-Feedback
-```
-
-Citizens can track their complaint and provide resolution feedback once the municipality marks the issue as resolved. Citizens can submit resolution feedback after municipal resolution and request reopening when an issue is not adequately resolved.
-
----
-
-## 👤 Citizen Profile & Privacy
-
-Citizens authenticate anonymously and create a lightweight profile with a required name and optional phone, email, area and ward fields, so that municipal operators can identify the reporter and provide complaint-related communication.
-
-Citizen contact information is **not publicly displayed** on maps or feeds.
-
-For this prototype, the anonymous profile is linked to the browser session. Clearing local browser data may result in loss of access to the anonymous account.
-
----
-
-## 🗄️ Firestore Data Model
-
-### `complaints/{complaintId}`
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `complaintNumber` | string | Human-readable tracking ID |
-| `citizenId` | string | Firebase Auth UID |
-| `citizenName` | string | Reporter name |
-| `citizenPhone` | string/null | Optional reporter phone |
-| `imageBase64` | string | Compressed image |
-| `gps.lat` | number | Latitude |
-| `gps.lng` | number | Longitude |
-| `timestamp` | number | Original report time |
-| `comment` | string | Optional description |
-| `aiResult` | object | Gemini analysis |
-| `isDuplicateOf` | string/null | Existing complaint ID if duplicated |
-| `priorityScore` | number | 0–100 priority score |
-| `priorityReasons` | array | Human-readable score explanation |
-| `recommendedIntervention` | object | Rule-based operational recommendation |
-| `status` | string | Current lifecycle status |
-| `assignedTeam` | string/null | Assigned team |
-| `assignedVehicle` | string/null | Assigned vehicle |
-| `urgentEscalation` | boolean | Urgent response flag |
-| `verifiedAt` | number/null | Verification timestamp |
-| `assignedAt` | number/null | Assignment timestamp |
-| `inProgressAt` | number/null | Work-start timestamp |
-| `resolvedAt` | number/null | Resolution timestamp |
-| `feedback` | object/null | Citizen resolution feedback |
-| `isDemo` | boolean | Indicates a fictional hackathon demo record |
-
-### `citizens/{citizenId}`
-
-Stores lightweight citizen profile data.
-
-### `teams/{teamId}`
-
-Stores response-team information such as team type, current workload and active status.
-
----
-
-## 🏗️ Architecture
-
-```mermaid
-flowchart TD
-    A["Citizen PWA<br/>React + Vite"]
-    A --> B["Photo + GPS + Comment"]
-    B --> C["Client-side Image Compression"]
-    C --> D["Gemini 3.6 Flash Multimodal API"]
-    D --> E["Waste Classification<br/>Volume + Confidence + Reasoning"]
-    E --> F["Duplicate Detection"]
-    F --> G["Priority Scoring"]
-    G --> H["Intervention Recommendation"]
-    H --> I[("Cloud Firestore")]
-
-    I --> J["Municipal Command Center<br/>React + Vite"]
-    J --> K["Live Map"]
-    J --> L["Priority Queue"]
-    J --> M["Dispatch"]
-    M --> N["Team + Vehicle Assignment"]
-    N --> I
-
-    I --> O["Resolution"]
-    O --> P["Citizen Verification & Feedback"]
-    P --> I
-
-    Q["Firebase Authentication"] --> A
-    Q --> J
-
-    R["OpenStreetMap"] --> K
-```
-
----
-
-## ☁️ Firebase Spark Prototype Architecture
-
-This prototype intentionally uses Firebase's **Spark no-cost plan**.
-
-### Used
-
-- Firebase Authentication
-- Cloud Firestore
-
-### Not Used
-
-- Firebase Storage
-- Cloud Functions
-- Cloud Run
-- Other billing-required backend services
-
-Images are compressed client-side and stored as Base64 in Firestore to remain within the prototype architecture.
-
----
-
-## ⚠️ Known Prototype Limitations
-
-### 1. Client-side Gemini API key
-
-The Gemini API key is intentionally used client-side for this prototype. The real key is stored only in local `.env` files and is never committed to the repository. For any public deployment, API restrictions (HTTP referrers) and usage quotas should also be configured in Google Cloud Console.
-
-### 2. Client-side computed fields
-
-AI inference, duplicate detection, priority calculation and intervention recommendation run client-side in this Spark-only prototype. Authentication and Firestore are managed by Firebase.
-
-### 3. Base64 image storage
-
-Production systems should use dedicated object storage rather than storing images directly inside Firestore documents.
-
-### 4. Anonymous citizen identity
-
-The prototype uses anonymous authentication; browser-data deletion can make an anonymous profile unrecoverable.
-
-### 5. Prototype municipal authentication
-
-The municipal portal uses Email/Password authentication. Production deployment should add stronger role-based access control.
-
-### 6. Duplicate detection
-
-The current prototype uses GPS/time/category-based duplicate detection. More advanced image-similarity detection is future work.
-
----
-
-## 🔐 Data Ethics & Responsible AI
-
-- Only limited personal information is collected.
-- Citizen contact information is restricted to authenticated municipal workflows.
-- GPS is captured for operational location purposes.
-- Images are used for waste-analysis and complaint handling.
-- AI results include confidence and reasoning.
-- AI recommendations are advisory rather than autonomous decisions.
-- Municipal operators retain final control over dispatch decisions.
-- A production deployment should introduce explicit retention/deletion policies and stronger access controls.
-
----
-
-## 🚀 Setup
-
-### Prerequisites
-
-- Node.js
-- npm
-- Firebase project
-- Firebase Authentication
-- Cloud Firestore
-- Gemini API key from Google AI Studio
-
-### 1. Clone
-
-```bash
-git clone <repository-url>
-cd swachhlens
-```
-
-### 2. Install Dependencies
-
-```bash
-cd citizen-app
-npm install
-
-cd ../portal
-npm install
-
-cd ..
-```
-
-### 3. Configure Environment Variables
-
-Copy `.env.example` to `.env` in both applications.
-
-Citizen app requires:
-
-```text
-VITE_GEMINI_API_KEY
-VITE_FIREBASE_API_KEY
-VITE_FIREBASE_AUTH_DOMAIN
-VITE_FIREBASE_PROJECT_ID
-VITE_FIREBASE_MESSAGING_SENDER_ID
-VITE_FIREBASE_APP_ID
-```
-
-Portal requires the Firebase variables only.
-
-**Never commit `.env` files or API keys.** Double-check `.gitignore` includes `.env` before your final push.
-
-### 4. Run Locally
-
-Terminal 1:
-
-```bash
-cd citizen-app
-npm run dev
-```
-
-Terminal 2:
-
-```bash
-cd portal
-npm run dev
-```
-
-### 5. Demo Data
-
-The repository contains scripts for:
-
-- demo team seeding
-- demo complaint seeding
-- demo image repair
-
-Demo complaints are fictional hackathon presentation records. The associated demo photographs are illustrative waste images used for demonstration purposes. Where attribution or licensing applies, source information is documented in `demo-assets/SOURCES.md`.
-
----
-
-## 🧪 Verification
-
-Production builds:
-
-```bash
-cd citizen-app
-npm run build
-
-cd ../portal
-npm run build
-```
-
-The expected end-to-end demo flow is:
-
-```text
-Citizen Profile
-→ Waste Photo
-→ GPS
-→ Gemini Analysis
-→ Priority
-→ Intervention Recommendation
-→ Submit
-→ Municipal Dashboard
-→ Dispatch
-→ Resolution
-→ Citizen Feedback
-```
-
----
-
-## 📸 Screenshots
-
-> Screenshots to be added by the author.
-
-Recommended screenshots:
-
-- Citizen Home
-- Citizen AI Analysis
-- Complaint Tracking
-- Municipal Dashboard
-- Live Complaint Map
-- Priority Queue
-- AI Recommendation + Municipal Decision
-- Resolution Feedback
+> **"SwachhLens transforms a citizen waste report into an explainable, geographically aware municipal response — from AI analysis and prioritization to field execution, verification, and citizen feedback."**
 
 ---
 
 ## 🎬 Demo
 
-The project is not currently deployed. It runs locally following the [Setup](#-setup) instructions above.
+Prototype demo submitted through TechNova/Unstop.
 
-A demo video will be added here once recorded.
+---
+
+## 💡 Problem
+
+Urban solid waste management in Indian municipalities is predominantly **reactive and opaque**:
+1. **Unidentified Waste Types & Volumes:** Citizens report waste without standardized classification, leaving control rooms unsure whether manual sweepers or heavy jetting vehicles are required.
+2. **Redundant Dispatches:** Multiple citizens report the same overflowing bin or dump within hours, resulting in duplicate work orders.
+3. **Hidden Biohazards:** Clinical, biomedical, and hazardous materials often sit unflagged in general queues without urgent escalation.
+4. **Substandard Execution:** Supervisors often mark tasks "completed" without verifiable proof, leaving citizens dissatisfied.
+
+---
+
+## 🚀 Solution
+
+SwachhLens bridges civic reporting and municipal operations through a **transparent, two-application ecosystem** built on Firebase's free (Spark) tier with **strict Human-in-the-Loop (HITL) governance**:
+
+$$\text{Citizen Report} \longrightarrow \text{Gemini 3.6 Flash} \longrightarrow \text{Explainable Priority} \longrightarrow \text{Municipal Dispatch} \longrightarrow \text{Field Execution} \longrightarrow \text{Citizen Review}$$
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────┐
+│                        CORE HUMAN-IN-THE-LOOP GOVERNANCE MANDATE                       │
+│                                                                                        │
+│   AI RECOMMENDS ──▶ MUNICIPAL OPERATOR DECIDES ──▶ FIELD SUPERVISOR EXECUTES           │
+│                            │                                   │                       │
+│                            ▼                                   ▼                       │
+│                    CITIZEN REVIEWS ◀────────────── MUNICIPAL OPERATOR VERIFIES         │
+│                   (1–5 Stars / Reopen)             (Before/After Photo Proof)          │
+└────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+* **AI Advises, Humans Decide:** Gemini 3.6 Flash classifies waste and recommends equipment, but **human municipal officers retain sole authority** to assign crews, inspect before/after photos, and close tickets.
+
+---
+
+## ✨ Key Features
+
+### 📱 Citizen Application (`citizen-app/`)
+* **Flexible Access:** 1-click Anonymous Guest reporting or Email/Password registered accounts with persistent report history across signed-in sessions/devices.
+* **Smart Client-Side Compression:** Canvas downscaling ($\\le 800\\text{px}$ JPEG, $\\sim 40–80\\text{ KB}$) saves bandwidth and enables zero-cost in-document storage.
+* **Gemini 3.6 Flash Vision:** Instant classification across 8 waste types, 4 volume tiers, and clinical biohazard detection.
+* **Explainable Priority Explainer:** Clear 0–100 score badge with transparent justification bullets.
+* **Multi-Factor Duplicate Notice:** Alerts citizens if an active report already exists within 50m in the last 48 hours.
+* **5-Stage Lifecycle Timeline:** Real-time tracking from `Reported` $\\rightarrow$ `Verified` $\\rightarrow$ `Assigned` $\\rightarrow$ `In Progress` $\\rightarrow$ `Resolved`.
+* **Citizen Resolution Review:** 1–5 star rating, satisfaction comments, and 1-click Reopen Request if cleanup is incomplete.
+
+### 🏢 Municipal Command Center (`portal/`)
+* **Real-Time Operations Dashboard:** Live Firestore listener updates KPI cards and queues without manual page reloads.
+* **Interactive Leaflet Live Map:** Color-coded priority pins (Red $\\ge 70$, Orange $40–69$, Green $<40$) and 800m hotspot overlays.
+* **Real-Time Operational Alerts:** 6 auto-updating notice cards for critical incidents, biohazards, aging jobs ($>24\\text{h}$), and schools/hospitals.
+* **Smart Dispatch Engine:** Recommends optimal response units based on capability matching and live team workloads (`currentLoad`), with full manual override.
+* **Photographic Verification Dossier:** Side-by-side comparison of the citizen's Before photo vs supervisor's After photo.
+
+### 👷 Field Supervisor Workspace (`portal/src/pages/Supervisor*`)
+* **Team-Scoped Queue:** Supervisors authenticate and access only jobs assigned to their specific unit (`user.teamId`).
+* **Cross-Team Access Guard:** Deep-linking to other units' jobs is blocked with an Access Denied banner.
+* **Execution State Machine:** Step 1 (Mark Arrived) $\\rightarrow$ Step 2 (Start Work) $\\rightarrow$ Step 3 (Submit Completion Photo & Notes).
+* **Rework Notification Banner:** Incomplete jobs returned by municipal officers immediately appear with rework instructions.
+
+---
+
+## ⚙️ How It Works
+
+1. **Citizen Capture:** Citizen snaps a waste photo and captures GPS coordinates via the mobile PWA.
+2. **Client Preprocessing:** Client-side HTML5 canvas compresses the photo to Base64 JPEG and generates a 64-bit perceptual dHash.
+3. **Multimodal AI Analysis:** Google Gemini 3.6 Flash classifies waste category, estimates volume tier, and checks bio-waste risk.
+4. **Decision Intelligence:** Deterministic engines calculate the 0–100 Priority Score and evaluate duplicate reports within 50m/48h.
+5. **Action Recommendation:** Rule-based routing engine suggests response team type, vehicle, crew count, and estimated time.
+6. **Municipal Review & Dispatch:** Municipal operator verifies incident on command center, reviews AI advisory, and assigns a team.
+7. **Field Response:** Scoped field supervisor receives task, logs on-site arrival, and transitions job to In Progress.
+8. **Evidence Submission:** Supervisor uploads post-cleanup photo and completion notes (`completed_pending_verification`).
+9. **Municipal Verification:** Municipal officer inspects Before vs After photos side-by-side and approves resolution (`resolved`).
+10. **Citizen Closure & Feedback:** Citizen views verified photos on their timeline, rates 1–5 stars, or requests reopening.
+
+---
+
+## 📸 Screenshots
+
+| 1. Citizen Mobile Reporting & AI Analysis | 2. Explainable Priority & AI Recommendation |
+|:---:|:---:|
+| ![Citizen Reporting](screenshots/03_citizen_reporting.png) | ![AI Recommendation](screenshots/15_municipal_ai_suggestion.png) |
+| *Camera capture, client compression, GPS capture, and Gemini 3.6 Flash perception.* | *0–100 transparent score breakdown with 9-rule equipment recommendation.* |
+
+| 3. Municipal Operations Command Center | 4. Live GIS Map & Hotspot Clusters |
+|:---:|:---:|
+| ![Municipal Dashboard](screenshots/05_municipal_command_centre.png) | ![Live Map](screenshots/06_live_map_hotspot.png) |
+| *Real-time KPI cards, priority queue, and active team workload tracker.* | *Interactive Leaflet map with priority pins and 800m spatial density clusters.* |
+
+| 5. Smart Dispatch & Human Override | 6. Operational Alert Center |
+|:---:|:---:|
+| ![Dispatch Modal](screenshots/11_municipal_assignment.png) | ![Operational Alerts](screenshots/07_municipal_alert_centre.png) |
+| *AI suggested vehicle & crew vs active team capacity (`currentLoad`).* | *6 real-time cards highlighting bio-risks, unassigned high-priority, and aging jobs.* |
+
+| 7. Field Supervisor Scoped Workspace | 8. Before/After Verification Dossier |
+|:---:|:---:|
+| ![Field Supervisor](screenshots/13_supervisor_dashboard.png) | ![Verification Dossier](screenshots/municipal_work_verification.png) |
+| *Mobile queue filtered to `user.teamId` with 3-step progress state machine.* | *Side-by-side photo inspection with 1-click Verify or Send Back for Rework.* |
+
+---
+
+## 🏗️ Architecture
+
+SwachhLens is architected on a **Zero-Cost Firebase Spark Architecture**, executing compute, AI perception, and scoring on client devices without requiring paid serverless infrastructure:
+
+```mermaid
+flowchart LR
+    subgraph CITIZEN["1. Citizen Capture"]
+        C1["Mobile PWA<br/>(React 19)"] --> C2["Canvas JPEG<br/>Compression"]
+    end
+
+    subgraph AI_LAYER["2. Decision Engines"]
+        A1["Gemini 3.6 Flash<br/>(Vision REST API)"] --> A2["Client Engines<br/>• 64-bit dHash Duplicates<br/>• 0-100 Priority Formula<br/>• 9-Rule Routing"]
+    end
+
+    subgraph BACKEND["3. Real-Time Cloud"]
+        DB[("Cloud Firestore<br/>(Firebase Spark Tier)")]
+    end
+
+    subgraph MUNICIPAL["4. Municipal Command"]
+        M1["Command Center<br/>(Live Map & Alerts)"] --> M2{"HUMAN OPERATOR<br/>Approval & Dispatch"}
+    end
+
+    subgraph FIELD["5. Field & Closure"]
+        F1["Field Supervisor<br/>(Scoped Execution)"] --> F2["Before/After<br/>Verification"] --> F3["Citizen Rating<br/>& Reopen"]
+    end
+
+    C2 ==>|"Base64 Image"| A1
+    A2 ==>|"Structured Report"| DB
+    DB ==>|"onSnapshot Stream"| M1
+    M2 ==>|"Assigned Work"| DB
+    DB ==>|"where(assignedTeam)"| F1
+    F2 ==>|"Verified Proof"| DB
+    F3 -.->|"Closed Ticket"| DB
+
+    classDef cStyle fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e3a8a;
+    classDef aStyle fill:#faf5ff,stroke:#8b5cf6,stroke-width:2px,color:#4c1d95;
+    classDef dbStyle fill:#fff7ed,stroke:#ea580c,stroke-width:2px,color:#7c2d12;
+    classDef mStyle fill:#ecfdf5,stroke:#059669,stroke-width:2px,color:#065f46;
+    classDef fStyle fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#78350f;
+
+    class C1,C2 cStyle;
+    class A1,A2 aStyle;
+    class DB dbStyle;
+    class M1,M2 mStyle;
+    class F1,F2,F3 fStyle;
+```
+
+> 📄 **Architecture & Technical Documentation in Repository:**<br/>
+> * **Technical Documentation PDF:** [`docs/SwachhLens_Technical_Documentation.pdf`](docs/SwachhLens_Technical_Documentation.pdf)<br/>
+> * **Architecture & Data Flow PDF:** [`docs/SwachhLens_Architecture_DataFlow.pdf`](docs/SwachhLens_Architecture_DataFlow.pdf)<br/>
+> * **Architecture & Data Flow Word Doc:** [`docs/SwachhLens_Architecture_and_DataFlow.docx`](docs/SwachhLens_Architecture_and_DataFlow.docx)<br/>
+> * **System Architecture Diagrams:** [`docs/SwachhLens_Architecture.png`](docs/SwachhLens_Architecture.png) • [`docs/SwachhLens_Architecture_Simplified.png`](docs/SwachhLens_Architecture_Simplified.png)
+
+---
+
+## 🛠️ Technology Stack
+
+| Technology | Purpose in SwachhLens |
+|---|---|
+| **React 19** | Declarative component UI for Citizen PWA and Municipal Command Center |
+| **Vite 6** | Fast development server and optimized ESM production bundling |
+| **React Router 7** | Client-side routing and role-scoped navigation guards |
+| **Google Cloud Firestore** | Real-time document database with WebSocket synchronization and security rules |
+| **Firebase Authentication** | Anonymous guest tokens and Email/Password staff RBAC |
+| **Google Gemini 3.6 Flash** | Multimodal image classification, volume estimation, and biohazard detection |
+| **Leaflet & React-Leaflet** | Interactive geospatial mapping with priority pins and hotspot overlays |
+| **OpenStreetMap / CartoDB** | Open raster basemap tile layers |
+| **Lucide React** | Consistent UI iconography |
+| **HTML5 Canvas API** | In-browser image compression and 64-bit dHash computation |
+
+---
+
+## 🧠 Decision Intelligence
+
+### 1. Explainable Priority Scoring ($0–100$)
+$$\text{PriorityScore} = \min\left(100, \text{round}\left((V \times 40) + (L \times 30) + (F \times 20) + (A \times 10) + \text{BioRiskBoost}\right)\right)$$
+
+* **Volume ($V \times 40$):** `small` ($0.25$), `medium` ($0.50$), `large` ($0.75$), `very_large` ($1.00$).
+* **Location Sensitivity ($L \times 30$):** `blocking_drainage` ($1.00$), `near_school/hospital/waterbody` ($0.70$), `main_road` ($0.50$), `none` ($0.00$).
+* **Report Frequency ($F \times 20$):** Reports within 50m in past 7 days: $\\frac{\\min(\\text{nearbyCount}, 5)}{5} \\times 20$.
+* **Age of Complaint ($A \times 10$):** Elapsed hours: $\\min\\left(\\frac{\\text{hours}}{48}, 1.0\\right) \\times 10$.
+* **Bio-Risk Escalation:** $+15\\text{ points}$ boost if `aiResult.bioWasteRisk === true`.
+
+### 2. Multi-Factor Duplicate Detection
+A new report is corroborated and linked (never silently discarded) when:
+* Matches the same waste category (`aiResult.wasteType`).
+* Located within **$\\le 50\\text{ meters}$** (Haversine distance).
+* Submitted within the last **$48\\text{ hours}$**.
+* **64-bit dHash Similarity:** Hamming distance match $\\ge 85\\%$ ($>80\\%$ high match, $65–79\\%$ moderate match).
+
+### 3. Spatial Density Hotspot Clustering
+* Iterative centroid clustering groups active complaints within an **$800\\text{m}$ radius**.
+* Severity ranking formula: $(\\text{unresolved} \\times 20) + (\\text{urgent} \\times 30) + (\\text{avgPriority} \\times 0.5) + (\\text{count} \\times 5)$.
+* *Note: Deterministic current-state density clustering, not predictive time-series forecasting.*
+
+### 4. Rule-Based Intervention Recommendation
+* 9 deterministic operational rules map waste type, volume, and location sensitivity to recommended team types (`manual_cleanup`, `mini_truck`, `recycling_partner`), vehicle requirements, crew sizes, and estimated response windows.
+
+---
+
+## 🔒 Security & Responsible AI
+
+* **Document Immutability:** [`firestore.rules`](firestore.rules) protects core complaint fields (`citizenId`, `imageBase64`, `gps`, `timestamp`, `aiResult`, `priorityScore`, `isDuplicateOf`) against post-creation modification.
+* **Citizen Feedback Diff Lock:** On resolved complaints, citizens can modify *only* the `feedback` map (`diff().affectedKeys().hasOnly(['feedback'])`).
+* **Directory Write Lock:** The `municipalUsers` collection is locked (`allow write: if false;`), preventing role elevation.
+* **Global Deletion Lock:** Document deletion is disabled (`allow delete: if false;`) across all collections.
+* **Responsible AI:** AI recommendations are advisory; all dispatches, reworks, and closures require human municipal approval.
+
+---
+
+## 📂 Repository Structure
+
+```
+swachhlens/
+├── citizen-app/             # Mobile-First Citizen Reporting Progressive Web App
+│   ├── src/                 # Components, pages, services (Gemini, dHash, Priority)
+│   └── vite.config.js       # Citizen app bundler configuration
+│
+├── portal/                  # Municipal Operations & Field Supervisor Command Center
+│   ├── src/                 # Dashboard, Leaflet live map, Supervisor workspace
+│   └── vite.config.js       # Portal bundler configuration
+│
+├── scripts/                 # Seeding and database verification scripts
+│   ├── seed-demo-data.js    # Seeds realistic Kolkata demo complaints with valid photos
+│   ├── seed-teams.js        # Seeds municipal response teams & capability profiles
+│   └── verify-data.js       # Read-only database inventory audit tool
+│
+├── demo-assets/             # Illustrative demonstration waste images
+├── docs/                    # Architecture & data-flow documentation (Word & PDF)
+├── screenshots/             # High-resolution application screenshots
+├── firestore.rules          # Production Firestore security and RBAC access rules
+├── firestore.indexes.json   # Composite query indexes for Firestore
+└── LICENSE                  # MIT Open-Source License
+```
+
+---
+
+## 💻 Local Setup
+
+### Prerequisites
+* **Node.js:** v18.0.0+ (Tested on Node v20 & v24)
+* **npm:** v9.0.0+
+* **Google Gemini API Key:** [Google AI Studio](https://aistudio.google.com/)
+* **Firebase Project:** Cloud Firestore & Firebase Auth enabled
+
+### 1. Clone & Install Dependencies
+```bash
+git clone https://github.com/farhanmd03/swachhlens.git
+cd swachhlens
+
+# Install root dependencies
+npm install
+
+# Install citizen-app dependencies
+cd citizen-app && npm install
+
+# Install portal dependencies
+cd ../portal && npm install
+cd ..
+```
+
+### 2. Environment Configuration
+Create `.env` files in both `citizen-app/` and `portal/` based on `.env.example`:
+
+**`citizen-app/.env`:**
+```env
+VITE_GEMINI_API_KEY=your_gemini_api_key
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+**`portal/.env`:**
+```env
+VITE_FIREBASE_API_KEY=your_firebase_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+```
+
+### 3. Seed Demo Data (Optional)
+> The repository includes the demo waste images required by the seeding scripts under `demo-assets/`, so no separate image download is required for the included demo dataset.
+
+```bash
+# Populate response teams and realistic Kolkata waste incidents
+node scripts/seed-teams.js
+node scripts/seed-demo-data.js
+```
+
+### 4. Run Applications
+```bash
+# Terminal 1: Launch Citizen Reporting App (Port 5173)
+cd citizen-app
+npm run dev
+
+# Terminal 2: Launch Municipal Command Center (Port 5174)
+cd portal
+npm run dev
+```
+* **Citizen App:** `http://localhost:5173`
+* **Municipal Portal:** `http://localhost:5174`
+
+---
+
+## 🔍 Current Prototype Limitations
+
+* **Photo-Based:** Operates on single-image captures; video stream ingestion is not supported in this prototype.
+* **Spark Tier Optimization:** Stores compressed Base64 strings directly in Firestore documents to run within Firebase free tier limits.
+* **Current-State Hotspots:** Groups active reports by spatial density; does not provide predictive machine learning forecasting.
+* **Prototype Stage:** Evaluated using realistic seeded urban scenarios; not deployed with an active municipal corporation.
 
 ---
 
 ## 🔮 Future Scope
 
-- Secure server-side Gemini inference
-- Firebase Storage / object storage for images
-- Image-similarity duplicate detection
-- Video-based waste analysis
-- Push/SMS/WhatsApp notifications
-- Production-grade role-based access control
-- Advanced hotspot and predictive analytics
-- Automated before/after cleanup verification
-- Integration with existing municipal complaint platforms
-
----
-
-## 🛠️ Tech Stack
-
-| Technology | Purpose |
-| :--- | :--- |
-| React | Frontend applications |
-| Vite | Build tooling |
-| Firebase Authentication | Citizen and municipal authentication |
-| Cloud Firestore | Real-time data layer |
-| Google Gemini 3.6 Flash | Multimodal waste analysis |
-| Leaflet | Interactive maps |
-| OpenStreetMap | Map tiles |
-| React Router | Client-side navigation |
-| Lucide React | Interface icons |
-
----
-
-## 📄 License
-
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for the full text.
+* **Server-Side API Gateway:** Transition Gemini API execution to Google Cloud Functions (Gen 2) with Cloud Secret Manager.
+* **Cloud Storage Buckets:** Store high-resolution media in Google Cloud Storage with automated thumbnail generation.
+* **Citizen Push Alerts:** Integrate Firebase Cloud Messaging (FCM) and SMS gateways for real-time status notifications.
+* **Longitudinal Analytics:** Ingest historical complaint records into Google BigQuery for seasonal illegal dumping trends.
 
 ---
 
 ## 👥 Team
 
 **Team TechTitans**
+* **Md Farhan** — Team Leader
+* **Ayush Kumar Chaudhary**
+* **Junaid Alam**
 
-- **Md Farhan** — Team Leader
-- **Ayush Kumar Chaudhary**
-- **Junaid Alam**
-
-**Guru Nanak Institute of Technology, Kolkata**  
-**B.Tech Computer Science & Engineering — 3rd Year**  
+*Guru Nanak Institute of Technology (GNIT), Kolkata*
 
 ---
 
-> **SwachhLens — See waste. Report it. Route the response.**
+## 📄 License
+
+This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.

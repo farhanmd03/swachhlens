@@ -20,36 +20,50 @@ export default function SupervisorTeamPage({ user }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user?.teamId) {
-      getActiveTeams()
-        .then((teams) => {
-          const found = teams.find((t) => t.id === user.teamId);
-          if (found) {
-            setTeam(getTeamWithZone(found));
-          }
-        })
-        .catch(console.error);
-
-      const unsub = subscribeToTeamComplaints(
-        user.teamId,
-        (data) => {
-          setComplaints(data || []);
-          setLoading(false);
-        },
-        (err) => {
-          console.error(err);
-          setLoading(false);
-        }
-      );
-
-      return () => unsub();
-    } else {
-      setLoading(false);
+    if (!user) {
+      return;
     }
+
+    if (!user.teamId) {
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    getActiveTeams()
+      .then((teams) => {
+        const found = teams.find((t) => t.id === user.teamId);
+        if (found) {
+          setTeam(getTeamWithZone(found));
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching active teams:', err);
+      });
+
+    const unsub = subscribeToTeamComplaints(
+      user.teamId,
+      (data) => {
+        setComplaints(data || []);
+        setLoading(false);
+      },
+      (err) => {
+        console.error('Error subscribing to team complaints:', err);
+        setLoading(false);
+      }
+    );
+
+    return () => unsub();
   }, [user?.teamId]);
 
-  const activeJobs = complaints.filter((c) => c.status === 'assigned' || c.status === 'in_progress').length;
-  const completedJobs = complaints.filter((c) => c.status === 'completed_pending_verification' || c.status === 'resolved').length;
+  const totalAssignedJobs = complaints.length;
+  const pendingStartJobs = complaints.filter((c) => c.status === 'assigned').length;
+  const inProgressJobs = complaints.filter((c) => c.status === 'in_progress').length;
+  const activeJobs = pendingStartJobs + inProgressJobs;
+  const completedJobs = complaints.filter(
+    (c) => c.status === 'completed_pending_verification' || c.status === 'resolved'
+  ).length;
 
   return (
     <div className="supervisor-team-page">

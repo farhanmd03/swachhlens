@@ -28,10 +28,16 @@ export default function SupervisorDashboardPage({ user }) {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all'); // 'all' | 'active' | 'urgent' | 'in_progress' | 'completed'
+  const [filter, setFilter] = useState('all'); // 'all' | 'pending' | 'active' | 'urgent' | 'in_progress' | 'awaiting_verification' | 'completed' | 'rework'
 
   useEffect(() => {
-    if (!user?.teamId) {
+    if (!user) {
+      return;
+    }
+
+    if (!user.teamId) {
+      setError('No operational response team assigned to this supervisor account. Please contact municipal dispatch to configure your unit.');
+      setLoading(false);
       return;
     }
 
@@ -55,27 +61,36 @@ export default function SupervisorDashboardPage({ user }) {
     return () => unsub();
   }, [user?.teamId]);
 
-  const assignedCount = complaints.filter((c) => c.status === 'assigned').length;
+  // ── Normalized Single Source of Truth Metrics ────────────────────
+  const totalWork = complaints.length;
+  const pendingStartCount = complaints.filter((c) => c.status === 'assigned').length;
   const inProgressCount = complaints.filter((c) => c.status === 'in_progress').length;
-  const activeCount = assignedCount + inProgressCount;
+  const activeCount = pendingStartCount + inProgressCount;
   const urgentCount = complaints.filter(
     (c) =>
       (c.urgentEscalation || c.aiResult?.bioWasteRisk || (c.priorityScore && c.priorityScore >= 70)) &&
       (c.status === 'assigned' || c.status === 'in_progress')
   ).length;
-  const completedCount = complaints.filter(
-    (c) => c.status === 'completed_pending_verification' || c.status === 'resolved'
+  const awaitingVerificationCount = complaints.filter(
+    (c) => c.status === 'completed_pending_verification'
   ).length;
+  const resolvedCount = complaints.filter((c) => c.status === 'resolved').length;
+  const completedCount = awaitingVerificationCount + resolvedCount;
+  const reworkCount = complaints.filter((c) => !!c.reworkReason && c.status === 'in_progress').length;
 
   const filteredComplaints = complaints.filter((c) => {
+    if (filter === 'all') return true;
+    if (filter === 'pending') return c.status === 'assigned';
+    if (filter === 'in_progress') return c.status === 'in_progress';
     if (filter === 'active') return c.status === 'assigned' || c.status === 'in_progress';
     if (filter === 'urgent')
       return (
         (c.urgentEscalation || c.aiResult?.bioWasteRisk || (c.priorityScore && c.priorityScore >= 70)) &&
         (c.status === 'assigned' || c.status === 'in_progress')
       );
-    if (filter === 'in_progress') return c.status === 'in_progress';
+    if (filter === 'awaiting_verification') return c.status === 'completed_pending_verification';
     if (filter === 'completed') return c.status === 'completed_pending_verification' || c.status === 'resolved';
+    if (filter === 'rework') return !!c.reworkReason && c.status === 'in_progress';
     return true;
   });
 
@@ -104,23 +119,23 @@ export default function SupervisorDashboardPage({ user }) {
           </div>
           <div className="kpi-content">
             <span className="kpi-label">Total Assigned</span>
-            <strong className="kpi-num">{complaints.length}</strong>
+            <strong className="kpi-num">{totalWork}</strong>
           </div>
         </div>
 
         <div
-          className={`supervisor-kpi-card card-urgent ${filter === 'urgent' ? 'active-kpi' : ''}`}
-          onClick={() => setFilter('urgent')}
+          className={`supervisor-kpi-card card-pending ${filter === 'pending' ? 'active-kpi' : ''}`}
+          onClick={() => setFilter('pending')}
           role="button"
           tabIndex={0}
-          onKeyDown={(e) => e.key === 'Enter' && setFilter('urgent')}
+          onKeyDown={(e) => e.key === 'Enter' && setFilter('pending')}
         >
-          <div className="kpi-icon-box" style={{ background: '#fee2e2', color: '#dc2626' }}>
-            <AlertTriangle size={22} />
+          <div className="kpi-icon-box" style={{ background: '#f3e8ff', color: '#9333ea' }}>
+            <Clock size={22} />
           </div>
           <div className="kpi-content">
-            <span className="kpi-label">Urgent Priority</span>
-            <strong className="kpi-num text-danger">{urgentCount}</strong>
+            <span className="kpi-label">Pending Start</span>
+            <strong className="kpi-num" style={{ color: '#9333ea' }}>{pendingStartCount}</strong>
           </div>
         </div>
 
@@ -137,6 +152,22 @@ export default function SupervisorDashboardPage({ user }) {
           <div className="kpi-content">
             <span className="kpi-label">In Progress</span>
             <strong className="kpi-num text-amber">{inProgressCount}</strong>
+          </div>
+        </div>
+
+        <div
+          className={`supervisor-kpi-card card-urgent ${filter === 'urgent' ? 'active-kpi' : ''}`}
+          onClick={() => setFilter('urgent')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => e.key === 'Enter' && setFilter('urgent')}
+        >
+          <div className="kpi-icon-box" style={{ background: '#fee2e2', color: '#dc2626' }}>
+            <AlertTriangle size={22} />
+          </div>
+          <div className="kpi-content">
+            <span className="kpi-label">Urgent Priority</span>
+            <strong className="kpi-num text-danger">{urgentCount}</strong>
           </div>
         </div>
 
@@ -164,19 +195,13 @@ export default function SupervisorDashboardPage({ user }) {
             className={`btn-filter ${filter === 'all' ? 'active' : ''}`}
             onClick={() => setFilter('all')}
           >
-            All Assigned ({complaints.length})
+            All Assigned ({totalWork})
           </button>
           <button
-            className={`btn-filter ${filter === 'active' ? 'active' : ''}`}
-            onClick={() => setFilter('active')}
+            className={`btn-filter ${filter === 'pending' ? 'active' : ''}`}
+            onClick={() => setFilter('pending')}
           >
-            Active Work ({activeCount})
-          </button>
-          <button
-            className={`btn-filter ${filter === 'urgent' ? 'active' : ''}`}
-            onClick={() => setFilter('urgent')}
-          >
-            Urgent ({urgentCount})
+            Pending Start ({pendingStartCount})
           </button>
           <button
             className={`btn-filter ${filter === 'in_progress' ? 'active' : ''}`}
@@ -185,11 +210,26 @@ export default function SupervisorDashboardPage({ user }) {
             In Progress ({inProgressCount})
           </button>
           <button
+            className={`btn-filter ${filter === 'urgent' ? 'active' : ''}`}
+            onClick={() => setFilter('urgent')}
+          >
+            Urgent ({urgentCount})
+          </button>
+          <button
             className={`btn-filter ${filter === 'completed' ? 'active' : ''}`}
             onClick={() => setFilter('completed')}
           >
-            Completed ({completedCount})
+            Completed / Verified ({completedCount})
           </button>
+          {reworkCount > 0 && (
+            <button
+              className={`btn-filter ${filter === 'rework' ? 'active' : ''}`}
+              onClick={() => setFilter('rework')}
+              style={{ color: '#dc2626', borderColor: '#fca5a5', background: filter === 'rework' ? '#fee2e2' : undefined }}
+            >
+              Rework Required ({reworkCount})
+            </button>
+          )}
         </div>
       </div>
 
