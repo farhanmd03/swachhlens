@@ -72,7 +72,7 @@ $$\text{Citizen Report} \longrightarrow \text{Gemini 3.6 Flash} \longrightarrow 
 * **Real-Time Operations Dashboard:** Live Firestore listener updates KPI cards and queues without manual page reloads.
 * **Interactive Leaflet Live Map:** Color-coded priority pins (Red $\\ge 70$, Orange $40–69$, Green $<40$) and 800m hotspot overlays.
 * **Real-Time Operational Alerts:** 6 auto-updating notice cards for critical incidents, biohazards, aging jobs ($>24\\text{h}$), and schools/hospitals.
-* **Smart Dispatch Engine:** Recommends optimal response units based on capability matching and live team workloads (`currentLoad`), with full manual override.
+* **Smart Dispatch Engine:** Recommends suitable response units based on capability matching and current team workload, with manual override.
 * **Photographic Verification Dossier:** Side-by-side comparison of the citizen's Before photo vs supervisor's After photo.
 
 ### 👷 Field Supervisor Workspace (`portal/src/pages/Supervisor*`)
@@ -124,7 +124,7 @@ $$\text{Citizen Report} \longrightarrow \text{Gemini 3.6 Flash} \longrightarrow 
 
 ## 🏗️ Architecture
 
-SwachhLens is architected on a **Zero-Cost Firebase Spark Architecture**, executing compute, AI perception, and scoring on client devices without requiring paid serverless infrastructure:
+Current prototype architecture: Firebase Spark / no-cost architecture, executing compute, AI perception, and scoring on client devices without requiring paid serverless infrastructure:
 
 ```mermaid
 flowchart LR
@@ -196,8 +196,18 @@ flowchart LR
 
 ## 🧠 Decision Intelligence
 
-### 1. Explainable Priority Scoring ($0–100$)
-$$\text{PriorityScore} = \min\left(100, \text{round}\left((V \times 40) + (L \times 30) + (F \times 20) + (A \times 10) + \text{BioRiskBoost}\right)\right)$$
+### 1. Explainable Priority Scoring (0–100)
+
+```text
+Priority Score =
+  min(100, round(
+    Volume × 40
+  + Location × 30
+  + Frequency × 20
+  + Age × 10
+  + Bio Risk Boost
+  ))
+```
 
 * **Volume ($V \times 40$):** `small` ($0.25$), `medium` ($0.50$), `large` ($0.75$), `very_large` ($1.00$).
 * **Location Sensitivity ($L \times 30$):** `blocking_drainage` ($1.00$), `near_school/hospital/waterbody` ($0.70$), `main_road` ($0.50$), `none` ($0.00$).
@@ -252,7 +262,7 @@ swachhlens/
 ├── demo-assets/             # Illustrative demonstration waste images
 ├── docs/                    # Architecture & data-flow documentation (Word & PDF)
 ├── screenshots/             # High-resolution application screenshots
-├── firestore.rules          # Production Firestore security and RBAC access rules
+├── firestore.rules          # Firestore security and RBAC access rules
 ├── firestore.indexes.json   # Composite query indexes for Firestore
 └── LICENSE                  # MIT Open-Source License
 ```
