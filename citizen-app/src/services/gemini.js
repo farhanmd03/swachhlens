@@ -1,4 +1,4 @@
-import { GEMINI_API_URL, GEMINI_API_KEY } from '../config/gemini.js';
+import { GEMINI_MODEL, GEMINI_API_URL, GEMINI_API_KEY } from '../config/gemini.js';
 import { WASTE_TYPES, VOLUMES, LOCATION_SENSITIVITIES } from '../config/constants.js';
 
 /**
@@ -17,6 +17,8 @@ export async function analyzeWasteImage(base64Data, mimeType = 'image/jpeg') {
     throw new Error('Gemini API key is not configured. Set VITE_GEMINI_API_KEY in your .env file.');
   }
 
+  console.log(`[SwachhLens AI] Using model: ${GEMINI_MODEL}`);
+
   const prompt = `You are an AI waste classification system for a civic cleanliness application called SwachhLens.
 
 Analyze this image and classify the waste/sanitation issue shown.
@@ -27,17 +29,17 @@ The JSON must have exactly these fields:
 
 {
   "primaryWasteType": "one of: construction_debris, plastic_waste, drain_blockage, overflowing_bin, hazardous_waste, e_waste, organic_waste, garbage_dump",
-  "secondaryWasteTypes": "array of zero or more of the above waste types",
+  "secondaryWasteTypes": "array of up to 3 of the above waste types",
   "volumeEstimate": "one of: small, medium, large, very_large",
   "volumeConfidence": "number between 0.0 and 1.0",
-  "visibleElements": "array of short textual observations (max 5)",
+  "visibleElements": "array of short observations (max 3 items, max 10 words each)",
   "spreadLevel": "one of: localized, moderate, extensive",
   "roadObstruction": "true or false",
   "drainageRisk": "true or false",
   "bioWasteRisk": "true or false",
   "locationSensitivityHint": "one of: ${LOCATION_SENSITIVITIES.join(', ')}",
   "confidence": "overall confidence number between 0.0 and 1.0",
-  "reasoning": "brief explanation of your classification, volume estimate and any risks"
+  "reasoning": "concise explanation in 1-2 sentences (max 40 words)"
 }
 
 Category definitions and precedence rules (choose the category that dominates the scene):
@@ -67,7 +69,7 @@ medium: roughly handcart/wheelcart-scale accumulation
 large: roughly mini‑truck/light commercial accumulation
 very_large: roughly accumulation beyond a single mini‑truck-scale response
 
-Return the fields as defined above. Volume confidence must clearly represent uncertainty.`;
+Return the fields as defined above. Volume confidence must clearly represent uncertainty. Keep reasoning concise.`;
 
   const requestBody = {
     contents: [
@@ -85,7 +87,7 @@ Return the fields as defined above. Volume confidence must clearly represent unc
     ],
     generationConfig: {
       temperature: 0.1,
-      maxOutputTokens: 1024,
+      maxOutputTokens: 2048,
       responseMimeType: "application/json",
       responseSchema: {
         type: "object",
@@ -99,7 +101,7 @@ Return the fields as defined above. Volume confidence must clearly represent unc
           roadObstruction: { type: "boolean" },
           drainageRisk: { type: "boolean" },
           bioWasteRisk: { type: "boolean" },
-          locationSensitivityHint: { type: "string", enum: ["none", "school", "hospital", "water_body", "drain"] },
+          locationSensitivityHint: { type: "string", enum: ["none", "near_school", "near_hospital", "near_water_body", "blocking_drainage"] },
           confidence: { type: "number", minimum: 0, maximum: 1 },
           reasoning: { type: "string" }
         },
@@ -108,33 +110,114 @@ Return the fields as defined above. Volume confidence must clearly represent unc
     },
   };
 
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(requestBody),
-  });
+  // ── Transient error retry helper ──────────────────────────────
+  const TRANSIENT_STATUSES = [408, 429, 500, 502, 503, 504];
+  const MAX_RETRIES = 2;
 
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      `Gemini API error (${response.status}): ${errorData?.error?.message || response.statusText}`
-    );
+  let response;
+  let attempt = 0;
+
+  while (attempt <= MAX_RETRIES) {
+    try {
+      response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (response.ok) {
+        break; // Success
+      }
+
+      // Check if transient error eligible for retry
+      if (TRANSIENT_STATUSES.includes(response.status) && attempt < MAX_RETRIES) {
+        attempt++;
+        // Exponential backoff with jitter: 1000ms * 2^attempt + jitter (0-500ms)
+        const backoffMs = Math.round(1000 * Math.pow(2, attempt - 1) + Math.random() * 500);
+        console.warn(
+          `[SwachhLens AI] Transient Gemini error (${response.status}). Retrying attempt ${attempt}/${MAX_RETRIES} in ${backoffMs}ms...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        continue;
+      }
+
+      // Non-transient or retries exhausted
+      break;
+    } catch (networkErr) {
+      if (attempt < MAX_RETRIES) {
+        attempt++;
+        const backoffMs = Math.round(1000 * Math.pow(2, attempt - 1) + Math.random() * 500);
+        console.warn(
+          `[SwachhLens AI] Network error (${networkErr.message}). Retrying attempt ${attempt}/${MAX_RETRIES} in ${backoffMs}ms...`
+        );
+        await new Promise((resolve) => setTimeout(resolve, backoffMs));
+        continue;
+      }
+      throw new Error(`Temporary Gemini service failure (network error: ${networkErr.message})`);
+    }
+  }
+
+  // Handle final non-ok response
+  if (!response || !response.ok) {
+    const status = response ? response.status : 'Network error';
+    const errorData = response ? await response.json().catch(() => ({})) : {};
+    const errorMsg = errorData?.error?.message || (response ? response.statusText : 'Connection failed');
+
+    console.error(`[SwachhLens AI] HTTP ${status} error: ${errorMsg}`);
+
+    if (TRANSIENT_STATUSES.includes(status)) {
+      throw new Error(
+        `Temporary Gemini service failure (${status}): The AI service is currently overloaded or experiencing high demand. Please try again.`
+      );
+    } else if (status === 400 || status === 401 || status === 403) {
+      throw new Error(
+        `Invalid API or configuration error (${status}): ${errorMsg}`
+      );
+    } else {
+      throw new Error(`Gemini API error (${status}): ${errorMsg}`);
+    }
   }
 
   const data = await response.json();
 
-  // Extract text from Gemini response
-  const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-  if (!text) {
-    throw new Error('No response text received from Gemini API.');
+  // Inspect first candidate
+  const candidate = data?.candidates?.[0];
+  const finishReason = candidate?.finishReason || 'UNKNOWN';
+  const finishMessage = candidate?.finishMessage || null;
+
+  // Safe diagnostics (DevTools console)
+  console.log(
+    `[SwachhLens AI] HTTP ${response.status} OK | finishReason: ${finishReason}` +
+    (finishMessage ? ` | finishMessage: ${finishMessage}` : '')
+  );
+
+  // ── TASK 3: Detect truncated output ───────────────────────────
+  if (finishReason === 'MAX_TOKENS') {
+    const rawPartial = candidate?.content?.parts?.[0]?.text || '';
+    console.error(
+      `[SwachhLens AI] AI_INCOMPLETE_RESPONSE: Model output hit MAX_TOKENS limit (length: ${rawPartial.length} chars).`
+    );
+    throw new Error(
+      `Incomplete model response (AI_INCOMPLETE_RESPONSE): Gemini exceeded token limit (finishReason: MAX_TOKENS, textLength: ${rawPartial.length}). Analysis was cut off.`
+    );
   }
+
+  // Extract text from Gemini response
+  const text = candidate?.content?.parts?.[0]?.text;
+  if (!text) {
+    throw new Error('Incomplete model response: No response text received from Gemini API.');
+  }
+
+  console.log(`[SwachhLens AI] Response text received (length: ${text.length} chars).`);
 
   // Parse JSON from response (handle potential markdown code fences)
   const cleanedText = text.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
   let result;
   try {
     result = JSON.parse(cleanedText);
+    console.log(`[SwachhLens AI] JSON parsed successfully.`);
   } catch (parseError) {
+    console.error(`[SwachhLens AI] JSON parse failed. Raw text length: ${cleanedText.length}. Error: ${parseError.message}`);
     throw new Error(`Failed to parse Gemini response as JSON: ${cleanedText}`);
   }
 
@@ -144,7 +227,13 @@ Return the fields as defined above. Volume confidence must clearly represent unc
 
 /**
  * Validate and sanitize the Gemini API result.
- * Implements the V2 validation rules for Badge 2.
+ *
+ * Core fields that affect operational decisions (wasteType, volume,
+ * confidence, bioWasteRisk) are NOT silently defaulted to plausible
+ * values. Instead, missing/invalid core fields are recorded in
+ * `validationIssues` and `analysisStatus` is set to "needs_review".
+ *
+ * Non-critical / display-only fields keep safe defaults.
  */
 function validateGeminiResultV2(result) {
   const allowedWasteTypes = [
@@ -159,35 +248,59 @@ function validateGeminiResultV2(result) {
   ];
   const allowedVolume = ["small", "medium", "large", "very_large"];
   const allowedSpread = ["localized", "moderate", "extensive"];
-  const allowedLocation = ["none", "school", "hospital", "water_body", "drain"];
 
-  // primary waste type
-  const primaryWasteType = allowedWasteTypes.includes(result.primaryWasteType)
-    ? result.primaryWasteType
-    : "garbage_dump";
+  // Canonical location enum — must match constants.js exactly
+  const allowedLocation = ["none", "near_school", "near_hospital", "near_water_body", "blocking_drainage"];
 
-  // secondary waste types – array, allowed values, no dupes, max 5, exclude primary
+  // Normalize legacy/short location values at the Gemini boundary
+  const locationAliases = {
+    school: "near_school",
+    hospital: "near_hospital",
+    water_body: "near_water_body",
+    drain: "blocking_drainage",
+  };
+
+  const validationIssues = [];
+
+  // ── Core field: primaryWasteType ──────────────────────────────
+  let primaryWasteType;
+  if (result?.primaryWasteType && allowedWasteTypes.includes(result.primaryWasteType)) {
+    primaryWasteType = result.primaryWasteType;
+  } else {
+    primaryWasteType = null;
+    validationIssues.push(
+      `Invalid or missing primaryWasteType: "${result?.primaryWasteType ?? '(absent)'}"`
+    );
+  }
+
+  // ── Non-critical: secondaryWasteTypes ─────────────────────────
   let secondaryWasteTypes = [];
-  if (Array.isArray(result.secondaryWasteTypes)) {
+  if (Array.isArray(result?.secondaryWasteTypes)) {
     secondaryWasteTypes = result.secondaryWasteTypes
       .filter((t) => allowedWasteTypes.includes(t) && t !== primaryWasteType)
       .filter((v, i, self) => self.indexOf(v) === i) // dedupe
       .slice(0, 5);
   }
 
-  // volume estimate
-  const volumeEstimate = allowedVolume.includes(result.volumeEstimate)
-    ? result.volumeEstimate
-    : "medium";
+  // ── Core field: volumeEstimate ────────────────────────────────
+  let volumeEstimate;
+  if (result?.volumeEstimate && allowedVolume.includes(result.volumeEstimate)) {
+    volumeEstimate = result.volumeEstimate;
+  } else {
+    volumeEstimate = null;
+    validationIssues.push(
+      `Invalid or missing volumeEstimate: "${result?.volumeEstimate ?? '(absent)'}"`
+    );
+  }
 
-  // volume confidence
-  const volumeConfidence = typeof result.volumeConfidence === "number"
+  // ── Non-critical: volumeConfidence ────────────────────────────
+  const volumeConfidence = typeof result?.volumeConfidence === "number"
     ? Math.max(0, Math.min(1, result.volumeConfidence))
     : 0.5;
 
-  // visible elements – strings only, trimmed, non‑empty, max 5
+  // ── Non-critical: visibleElements ─────────────────────────────
   let visibleElements = [];
-  if (Array.isArray(result.visibleElements)) {
+  if (Array.isArray(result?.visibleElements)) {
     visibleElements = result.visibleElements
       .filter((v) => typeof v === "string")
       .map((v) => v.trim())
@@ -195,12 +308,12 @@ function validateGeminiResultV2(result) {
       .slice(0, 5);
   }
 
-  // spread level
-  const spreadLevel = allowedSpread.includes(result.spreadLevel)
+  // ── Non-critical: spreadLevel ─────────────────────────────────
+  const spreadLevel = allowedSpread.includes(result?.spreadLevel)
     ? result.spreadLevel
     : "localized";
 
-  // safe boolean coercion helper
+  // ── Safe boolean coercion helper ──────────────────────────────
   const coerceBoolean = (val) => {
     if (typeof val === "boolean") return val;
     if (typeof val === "string") {
@@ -209,27 +322,68 @@ function validateGeminiResultV2(result) {
       if (["false", "no", "0"].includes(low)) return false;
     }
     if (typeof val === "number") return val !== 0;
-    return false;
+    return undefined; // explicitly unknown
   };
 
-  const roadObstruction = coerceBoolean(result.roadObstruction);
-  const drainageRisk = coerceBoolean(result.drainageRisk);
-  const bioWasteRisk = coerceBoolean(result.bioWasteRisk);
+  // ── Non-critical risk booleans (display-only) ─────────────────
+  const roadObstruction = coerceBoolean(result?.roadObstruction) ?? false;
+  const drainageRisk = coerceBoolean(result?.drainageRisk) ?? false;
 
-  // location sensitivity hint
-  const locationSensitivityHint = allowedLocation.includes(result.locationSensitivityHint)
-    ? result.locationSensitivityHint
-    : "none";
+  // ── Core field: bioWasteRisk ──────────────────────────────────
+  const rawBioRisk = coerceBoolean(result?.bioWasteRisk);
+  let bioWasteRisk;
+  if (rawBioRisk === undefined) {
+    bioWasteRisk = "unknown";
+    validationIssues.push("Missing bioWasteRisk — not defaulting to false");
+  } else {
+    bioWasteRisk = rawBioRisk;
+  }
 
-  // overall confidence
-  const confidence = typeof result.confidence === "number"
-    ? Math.max(0, Math.min(1, result.confidence))
-    : 0.5;
+  // ── Location sensitivity hint (normalize at boundary) ─────────
+  let rawLocation = result?.locationSensitivityHint;
+  if (typeof rawLocation === "string" && locationAliases[rawLocation]) {
+    rawLocation = locationAliases[rawLocation];
+  }
+  let locationSensitivityHint;
+  if (allowedLocation.includes(rawLocation)) {
+    locationSensitivityHint = rawLocation;
+  } else if (!rawLocation || rawLocation === 'none') {
+    locationSensitivityHint = "none";
+  } else {
+    locationSensitivityHint = "none";
+    validationIssues.push(`Unrecognized locationSensitivityHint: "${rawLocation}"`);
+  }
 
-  // reasoning text
-  const reasoning = typeof result.reasoning === "string"
+  // ── Core field: confidence ────────────────────────────────────
+  let confidence;
+  if (typeof result?.confidence === "number") {
+    confidence = Math.max(0, Math.min(1, result.confidence));
+  } else {
+    confidence = null;
+    validationIssues.push(
+      `Invalid or missing confidence: "${result?.confidence ?? '(absent)'}"`
+    );
+  }
+
+  // ── Non-critical: reasoning ───────────────────────────────────
+  const reasoning = typeof result?.reasoning === "string"
     ? result.reasoning.trim()
     : "No reasoning provided.";
+
+  // ── Determine analysis status ─────────────────────────────────
+  const analysisStatus = validationIssues.length === 0 ? "verified" : "needs_review";
+
+  // ── Console diagnostics (never logs API key) ──────────────────
+  console.log(
+    `[SwachhLens AI] Validation complete:\n` +
+    `  status: ${analysisStatus}\n` +
+    `  wasteType: ${primaryWasteType}\n` +
+    `  volume: ${volumeEstimate}\n` +
+    `  confidence: ${confidence}\n` +
+    `  bioRisk: ${bioWasteRisk}\n` +
+    `  location: ${locationSensitivityHint}\n` +
+    `  issues: ${validationIssues.length > 0 ? validationIssues.join('; ') : 'none'}`
+  );
 
   return {
     primaryWasteType,
@@ -244,5 +398,7 @@ function validateGeminiResultV2(result) {
     locationSensitivityHint,
     confidence,
     reasoning,
+    analysisStatus,
+    validationIssues,
   };
 }

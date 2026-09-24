@@ -10,10 +10,10 @@
  * Production would move Gemini processing to a secure server-side service.
  */
 
-// Current model - change this single value to switch models
-export const GEMINI_MODEL = 'gemini-3.6-flash';
+// Configurable model name via environment, with default fallback
+export const GEMINI_MODEL = import.meta.env.VITE_GEMINI_MODEL?.trim() || 'gemini-3.6-flash';
 
-// API endpoint
+// API endpoint constructed dynamically from configured model
 export const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
 
 // API key from environment

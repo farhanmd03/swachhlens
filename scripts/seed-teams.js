@@ -66,34 +66,24 @@ if (!firebaseConfig.apiKey || firebaseConfig.apiKey === 'YOUR_FIREBASE_API_KEY')
 
 // ── Demo Teams (fictional hackathon records) ────────────────────
 const DEMO_TEAMS = [
-  {
-    id: 'team-manual-a',
-    name: 'Manual Cleanup Team A',
-    type: 'manual_cleanup',
-    currentLoad: 0,
-    active: true,
-  },
-  {
-    id: 'team-truck-1',
-    name: 'Mini Truck Unit 1',
-    type: 'mini_truck',
-    currentLoad: 0,
-    active: true,
-  },
-  {
-    id: 'team-recycle-gc',
-    name: 'Recycling Partner - GreenCycle',
-    type: 'recycling_partner',
-    currentLoad: 0,
-    active: true,
-  },
-  {
-    id: 'team-manual-b',
-    name: 'Manual Cleanup Team B',
-    type: 'manual_cleanup',
-    currentLoad: 0,
-    active: true,
-  },
+  // Zone North
+  { id: 'team-north-1', name: 'North Team 1', type: 'manual_cleanup', currentLoad: 2, active: true },
+  { id: 'team-north-2', name: 'North Team 2', type: 'mini_truck', currentLoad: 0, active: true },
+  // Zone Central
+  { id: 'team-central-1', name: 'Central Team 1', type: 'manual_cleanup', currentLoad: 1, active: true },
+  { id: 'team-central-2', name: 'Central Team 2', type: 'mini_truck', currentLoad: 3, active: true },
+  // Zone South
+  { id: 'team-south-1', name: 'South Team 1', type: 'manual_cleanup', currentLoad: 0, active: true },
+  { id: 'team-south-2', name: 'South Team 2', type: 'mini_truck', currentLoad: 4, active: true },
+  // Zone East
+  { id: 'team-east-1', name: 'East Team 1', type: 'manual_cleanup', currentLoad: 1, active: true },
+  { id: 'team-east-2', name: 'East Team 2', type: 'mini_truck', currentLoad: 2, active: true },
+  // Zone West
+  { id: 'team-west-1', name: 'West Team 1', type: 'manual_cleanup', currentLoad: 3, active: true },
+  { id: 'team-west-2', name: 'West Team 2', type: 'mini_truck', currentLoad: 0, active: true },
+  // Recycling partners
+  { id: 'team-recycle-1', name: 'Recycling Partner – GreenCycle', type: 'recycling_partner', currentLoad: 0, active: true },
+  { id: 'team-recycle-2', name: 'Recycling Partner – BlueCycle', type: 'recycling_partner', currentLoad: 0, active: true },
 ];
 
 async function seedTeams() {
@@ -114,24 +104,24 @@ async function seedTeams() {
   const teamsRef = collection(db, 'teams');
   const existing = await getDocs(teamsRef);
 
-  if (!existing.empty) {
-    console.log(`⚠️  Found ${existing.size} existing team(s) in Firestore.`);
-    console.log('   Skipping seed to avoid duplicates.');
-    console.log('   Delete existing teams manually if you want to re-seed.\n');
-    process.exit(0);
-  }
+  // If any teams already exist, we will not abort. Instead we will create only missing ones.
+  const existingIds = new Set();
+  existing.forEach((doc) => existingIds.add(doc.id));
 
-  // Seed teams
-  console.log('📝 Creating demo teams...\n');
+  console.log('📝 Creating / updating demo teams...\n');
 
   for (const team of DEMO_TEAMS) {
     const { id, ...data } = team;
     const docRef = doc(db, 'teams', id);
-    await setDoc(docRef, data);
-    console.log(`   ✅ ${data.name} (${data.type})`);
+    if (existingIds.has(id)) {
+      console.log(`   ⚠️ ${data.name} already exists, skipping.`);
+    } else {
+      await setDoc(docRef, data);
+      console.log(`   ✅ ${data.name} (${data.type}) created`);
+    }
   }
 
-  console.log(`\n🎉 Successfully seeded ${DEMO_TEAMS.length} demo teams!`);
+  console.log(`\n🎉 Seed complete. Total demo teams defined: ${DEMO_TEAMS.length}`);
   console.log('\nTeam IDs:');
   for (const team of DEMO_TEAMS) {
     console.log(`   ${team.id} → ${team.name}`);

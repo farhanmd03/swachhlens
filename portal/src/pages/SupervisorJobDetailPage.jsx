@@ -430,6 +430,16 @@ export default function SupervisorJobDetailPage({ user }) {
                   {gps ? `${gps.lat.toFixed(6)}, ${gps.lng.toFixed(6)}` : 'N/A'}
                 </code>
               </div>
+              {gps && typeof gps.lat === 'number' && typeof gps.lng === 'number' && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(gps.lat)},${encodeURIComponent(gps.lng)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-primary navigate-site-btn"
+                >
+                  <MapPin size={16} /> Navigate to Site
+                </a>
+              )}
               {comment && (
                 <div className="geo-comment-box">
                   <span className="geo-label">Citizen Notes:</span>

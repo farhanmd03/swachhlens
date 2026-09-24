@@ -62,7 +62,7 @@ export function generatePriorityReasons({
   }
 
   // Urgent waste types as additional context
-  if (URGENT_WASTE_TYPES.includes(wasteType)) {
+  if (wasteType && URGENT_WASTE_TYPES.includes(wasteType)) {
     const label = WASTE_TYPE_LABELS[wasteType] || wasteType;
     if (!reasons.some((r) => r.toLowerCase().includes(label.toLowerCase()))) {
       reasons.push(label);
@@ -70,8 +70,10 @@ export function generatePriorityReasons({
   }
 
   // Bio-waste risk escalation
-  if (bioWasteRisk) {
+  if (bioWasteRisk === true) {
     reasons.push('Potential bio-waste risk (requires specialized containment)');
+  } else if (bioWasteRisk === 'unknown') {
+    reasons.push('Bio-waste risk undetermined (field inspection required)');
   }
 
   return reasons;
@@ -90,7 +92,7 @@ export function generatePriorityReasons({
  * @param {{lat: number, lng: number}} params.gps
  * @param {number} params.timestamp
  * @param {string} [params.wasteType] - Optional, used for priority reasons
- * @param {boolean} [params.bioWasteRisk] - Optional bio-waste risk flag
+ * @param {boolean|string} [params.bioWasteRisk=false] - Optional bio-waste risk flag (true | false | 'unknown')
  * @returns {Promise<{priorityScore: number, reportFrequency: number, priorityReasons: string[]}>}
  */
 export async function calculatePriority({
@@ -101,8 +103,15 @@ export async function calculatePriority({
   wasteType,
   bioWasteRisk = false,
 }) {
-  const volumeWeight = VOLUME_WEIGHTS[volumeEstimate] ?? 0.50;
-  const locationWeight = LOCATION_SENSITIVITY_WEIGHTS[locationSensitivityHint] ?? 0.00;
+  // If volumeEstimate is unknown/null, use conservative weight 0.25 rather than fabricating medium (0.50)
+  const volumeWeight = volumeEstimate && VOLUME_WEIGHTS[volumeEstimate] !== undefined
+    ? VOLUME_WEIGHTS[volumeEstimate]
+    : 0.25;
+
+  // Canonical location sensitivity weights
+  const locationWeight = locationSensitivityHint && LOCATION_SENSITIVITY_WEIGHTS[locationSensitivityHint] !== undefined
+    ? LOCATION_SENSITIVITY_WEIGHTS[locationSensitivityHint]
+    : 0.00;
 
   const nearbyCount = await countNearbyComplaints(
     gps,
@@ -114,8 +123,9 @@ export async function calculatePriority({
   const hoursOld = (Date.now() - timestamp) / (1000 * 60 * 60);
   const ageWeight = Math.min(hoursOld / 48, 1);
 
-  // If bioWasteRisk is flagged, provide a +15 score boost (capped at 100)
-  const bioRiskBoost = bioWasteRisk ? 15 : 0;
+  // If bioWasteRisk is confirmed true, provide a +15 score boost (capped at 100)
+  // If 'unknown', do not boost blindly
+  const bioRiskBoost = bioWasteRisk === true ? 15 : 0;
 
   const rawScore =
     (volumeWeight * 40) +
@@ -152,8 +162,8 @@ export async function calculatePriority({
  */
 export function calculateUrgentEscalation(wasteType, locationSensitivityHint, bioWasteRisk = false) {
   return (
-    URGENT_WASTE_TYPES.includes(wasteType) ||
-    URGENT_LOCATIONS.includes(locationSensitivityHint) ||
-    Boolean(bioWasteRisk)
+    (Boolean(wasteType) && URGENT_WASTE_TYPES.includes(wasteType)) ||
+    (Boolean(locationSensitivityHint) && URGENT_LOCATIONS.includes(locationSensitivityHint)) ||
+    bioWasteRisk === true
   );
 }

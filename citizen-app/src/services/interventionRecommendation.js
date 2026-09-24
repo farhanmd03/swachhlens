@@ -35,8 +35,8 @@ export function getInterventionRecommendation({
   locationSensitivityHint,
   bioWasteRisk = false,
 }) {
-  // ── Rule 0: Bio-Waste Risk Escalation ───────────────────────────
-  if (bioWasteRisk) {
+  // ── Rule 0: Bio-Waste Risk Escalation (requires confirmed risk) ─
+  if (bioWasteRisk === true) {
     return {
       recommendedAction: 'Urgent bio-waste containment & sanitized specialized handling',
       teamType: 'manual_cleanup',
@@ -47,6 +47,22 @@ export function getInterventionRecommendation({
         'Potential biological or clinical waste poses direct infection and biohazard risks. ' +
         'Specialized PPE, biohazard containment bags, and sanitized transport are recommended before general handling.',
       urgent: true,
+    };
+  }
+
+  // ── Rule 0B: Unverified / Missing Waste Type (Safe Review) ──────
+  if (!wasteType) {
+    const isUndeterminedBio = bioWasteRisk === 'unknown';
+    return {
+      recommendedAction: 'On-site waste assessment & manual inspection',
+      teamType: 'manual_cleanup',
+      vehicle: 'Collection Van',
+      workerCount: 2,
+      estimatedCleanupTime: '20–40 minutes',
+      reasoning:
+        'AI classification is incomplete or inconclusive. A standard team is dispatched for on-site visual verification ' +
+        (isUndeterminedBio ? 'with bio-hazard inspection caution.' : 'to determine exact disposal needs.'),
+      urgent: false,
     };
   }
 

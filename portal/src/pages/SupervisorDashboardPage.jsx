@@ -28,7 +28,8 @@ export default function SupervisorDashboardPage({ user }) {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all'); // 'all' | 'pending' | 'active' | 'urgent' | 'in_progress' | 'awaiting_verification' | 'completed' | 'rework'
+  const [filter, setFilter] = useState('active'); // default to active work view
+  const [historyMonth, setHistoryMonth] = useState(''); // format YYYY-MM for resolved history filter
 
   useEffect(() => {
     if (!user) {
@@ -75,24 +76,36 @@ export default function SupervisorDashboardPage({ user }) {
     (c) => c.status === 'completed_pending_verification'
   ).length;
   const resolvedCount = complaints.filter((c) => c.status === 'resolved').length;
-  const completedCount = awaitingVerificationCount + resolvedCount;
+   const completedCount = resolvedCount; // show only resolved complaints in completed view
   const reworkCount = complaints.filter((c) => !!c.reworkReason && c.status === 'in_progress').length;
 
-  const filteredComplaints = complaints.filter((c) => {
-    if (filter === 'all') return true;
-    if (filter === 'pending') return c.status === 'assigned';
-    if (filter === 'in_progress') return c.status === 'in_progress';
-    if (filter === 'active') return c.status === 'assigned' || c.status === 'in_progress';
-    if (filter === 'urgent')
-      return (
-        (c.urgentEscalation || c.aiResult?.bioWasteRisk || (c.priorityScore && c.priorityScore >= 70)) &&
-        (c.status === 'assigned' || c.status === 'in_progress')
-      );
-    if (filter === 'awaiting_verification') return c.status === 'completed_pending_verification';
-    if (filter === 'completed') return c.status === 'completed_pending_verification' || c.status === 'resolved';
-    if (filter === 'rework') return !!c.reworkReason && c.status === 'in_progress';
-    return true;
-  });
+           const filteredComplaints = complaints.filter((c) => {
+             if (filter === 'all') {
+               // Exclude resolved complaints from general view
+               return c.status !== 'resolved';
+             }
+             if (filter === 'pending') return c.status === 'assigned';
+             if (filter === 'in_progress') return c.status === 'in_progress';
+             if (filter === 'active') return c.status === 'assigned' || c.status === 'in_progress';
+             if (filter === 'urgent')
+               return (
+                 (c.urgentEscalation || c.aiResult?.bioWasteRisk || (c.priorityScore && c.priorityScore >= 70)) &&
+                 (c.status === 'assigned' || c.status === 'in_progress')
+               );
+             if (filter === 'awaiting_verification') return c.status === 'completed_pending_verification';
+             if (filter === 'completed') {
+               if (c.status !== 'resolved') return false;
+               if (historyMonth) {
+                 const resolvedAt = c.resolvedAt;
+                 if (!resolvedAt) return false;
+                 const month = new Date(resolvedAt).toISOString().slice(0,7); // YYYY-MM
+                 return month === historyMonth;
+               }
+               return true;
+             }
+             if (filter === 'rework') return !!c.reworkReason && c.status === 'in_progress';
+             return true;
+           });
 
   return (
     <div className="supervisor-dashboard-page">
@@ -221,6 +234,16 @@ export default function SupervisorDashboardPage({ user }) {
           >
             Completed / Verified ({completedCount})
           </button>
+          {filter === 'completed' && (
+            <input
+              type="month"
+              value={historyMonth}
+              onChange={(e) => setHistoryMonth(e.target.value)}
+              className="month-filter"
+              title="Filter resolved history by month"
+              style={{ marginLeft: '8px' }}
+            />
+          )}
           {reworkCount > 0 && (
             <button
               className={`btn-filter ${filter === 'rework' ? 'active' : ''}`}

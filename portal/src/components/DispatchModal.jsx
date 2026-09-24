@@ -103,8 +103,16 @@ export default function DispatchModal({ complaint, onClose }) {
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
+      <div
+        className="modal-content"
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: '85vh',
+        }}
+      >
+        <div className="modal-header" style={{ flexShrink: 0 }}>
           <div className="modal-header-title">
             <h3>Dispatch &amp; Operations Routing</h3>
             <span className="modal-id-tag">{complaint.complaintNumber || complaint.id.slice(0, 8)}</span>
@@ -114,7 +122,14 @@ export default function DispatchModal({ complaint, onClose }) {
           </button>
         </div>
 
-        <div className="modal-body">
+        <div
+          className="modal-body"
+          style={{
+            overflowY: 'auto',
+            flex: '1 1 auto',
+            minHeight: 0,
+          }}
+        >
           {/* Complaint quick summary */}
           <div className="modal-summary-strip">
             <span><strong>Issue:</strong> {WASTE_TYPE_LABELS[complaint.aiResult?.wasteType] || 'Unknown'}</span>
@@ -222,24 +237,6 @@ export default function DispatchModal({ complaint, onClose }) {
                   </div>
                 )}
 
-                <div className="modal-rec-actions" style={{ marginTop: '16px' }}>
-                  <button
-                    className="btn btn-primary"
-                    onClick={handleAcceptRecommendation}
-                    disabled={teamsLoading}
-                  >
-                    <Check size={15} />
-                    <span>Accept Recommendation</span>
-                  </button>
-                  <button
-                    className="btn btn-secondary"
-                    onClick={handleOverride}
-                  >
-                    <Edit3 size={15} />
-                    <span>Override Manually</span>
-                  </button>
-                </div>
-
                 <p className="modal-disclaimer">
                   Smart dispatch recommendations are advisory. Municipal operators hold final assignment authority.
                 </p>
@@ -318,17 +315,37 @@ export default function DispatchModal({ complaint, onClose }) {
           )}
         </div>
 
-        {mode === 'dispatch' && (
-          <div className="modal-footer">
-            <button className="btn btn-secondary" onClick={onClose} disabled={saving}>
-              Cancel
-            </button>
-            <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
-              <Send size={14} />
-              <span>{saving ? 'Saving...' : 'Confirm Dispatch'}</span>
-            </button>
-          </div>
-        )}
+        <div className="modal-footer" style={{ flexShrink: 0 }}>
+          {mode === 'recommendation' ? (
+            <div className="modal-rec-actions" style={{ marginBottom: 0, width: '100%' }}>
+              <button
+                className="btn btn-primary"
+                onClick={handleAcceptRecommendation}
+                disabled={teamsLoading}
+              >
+                <Check size={15} />
+                <span>Accept Recommendation</span>
+              </button>
+              <button
+                className="btn btn-secondary"
+                onClick={handleOverride}
+              >
+                <Edit3 size={15} />
+                <span>Override Manually</span>
+              </button>
+            </div>
+          ) : (
+            <>
+              <button className="btn btn-secondary" onClick={onClose} disabled={saving}>
+                Cancel
+              </button>
+              <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
+                <Send size={14} />
+                <span>{saving ? 'Saving...' : 'Confirm Dispatch'}</span>
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
