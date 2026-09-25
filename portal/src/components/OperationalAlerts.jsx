@@ -56,7 +56,7 @@ export default function OperationalAlerts({ complaints, onApplyFilter }) {
   // 6. Bio-waste / Hazardous alerts
   const bioOrHazardComplaints = complaints.filter(
     (c) =>
-      (c.aiResult?.wasteType === 'hazardous_waste' || c.aiResult?.bioWasteRisk) &&
+      (c.aiResult?.wasteType === 'hazardous_waste' || c.aiResult?.bioWasteRisk === true) &&
       c.status !== 'resolved'
   );
 

@@ -303,7 +303,7 @@ export default function SupervisorJobDetailPage({ user }) {
               <span>Critical Hazard</span>
             </span>
           )}
-          {aiResult?.bioWasteRisk && (
+          {aiResult?.bioWasteRisk === true && (
             <span className="urgent-badge-pill" style={{ background: '#7c3aed', color: '#fff' }}>
               <Biohazard size={12} />
               <span>Biohazard Alert</span>

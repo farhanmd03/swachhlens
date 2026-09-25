@@ -31,6 +31,13 @@ import {
   Check,
 } from 'lucide-react';
 
+function confidenceLabel(confidence) {
+  if (confidence === null || confidence === undefined) return 'Unavailable';
+  if (confidence >= 0.85) return 'High';
+  if (confidence >= 0.65) return 'Moderate';
+  return 'Low';
+}
+
 export default function ReportDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -277,9 +284,11 @@ export default function ReportDetailPage() {
               </strong>
             </div>
             <div className="metric-box">
-              <span className="metric-lbl">Confidence</span>
+              <span className="metric-lbl" title="AI-assessed confidence from available visual evidence; not a guaranteed probability of correctness.">
+                Confidence ⓘ
+              </span>
               <strong className="metric-val">
-                {Math.round((aiResult.confidence || 0) * 100)}%
+                {confidenceLabel(aiResult.confidence)}
               </strong>
             </div>
             <div className="metric-box">

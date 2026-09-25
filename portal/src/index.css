@@ -3158,3 +3158,9 @@ body {
   font-weight: 800;
   color: #0f172a;
 }
+
+.ai-stat-k[title] {
+  cursor: help;
+  text-decoration: underline dotted #94a3b8;
+  text-underline-offset: 3px;
+}

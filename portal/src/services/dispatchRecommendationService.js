@@ -170,7 +170,7 @@ export function recommendDispatch({ complaint, teams }) {
   // 3. Evaluate and Rank Eligible Teams
   const isUrgent = !!(
     complaint.urgentEscalation ||
-    complaint.aiResult?.bioWasteRisk ||
+    complaint.aiResult?.bioWasteRisk === true ||
     (complaint.priorityScore && complaint.priorityScore >= 70)
   );
   const cLat = complaint.gps?.lat;

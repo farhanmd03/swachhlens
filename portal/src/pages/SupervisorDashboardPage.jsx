@@ -69,7 +69,7 @@ export default function SupervisorDashboardPage({ user }) {
   const activeCount = pendingStartCount + inProgressCount;
   const urgentCount = complaints.filter(
     (c) =>
-      (c.urgentEscalation || c.aiResult?.bioWasteRisk || (c.priorityScore && c.priorityScore >= 70)) &&
+      (c.urgentEscalation || c.aiResult?.bioWasteRisk === true || (c.priorityScore && c.priorityScore >= 70)) &&
       (c.status === 'assigned' || c.status === 'in_progress')
   ).length;
   const awaitingVerificationCount = complaints.filter(
@@ -89,7 +89,7 @@ export default function SupervisorDashboardPage({ user }) {
              if (filter === 'active') return c.status === 'assigned' || c.status === 'in_progress';
              if (filter === 'urgent')
                return (
-                 (c.urgentEscalation || c.aiResult?.bioWasteRisk || (c.priorityScore && c.priorityScore >= 70)) &&
+                 (c.urgentEscalation || c.aiResult?.bioWasteRisk === true || (c.priorityScore && c.priorityScore >= 70)) &&
                  (c.status === 'assigned' || c.status === 'in_progress')
                );
              if (filter === 'awaiting_verification') return c.status === 'completed_pending_verification';
@@ -305,7 +305,7 @@ export default function SupervisorDashboardPage({ user }) {
                         <AlertTriangle size={11} /> Urgent
                       </span>
                     )}
-                    {job.aiResult?.bioWasteRisk && (
+                    {job.aiResult?.bioWasteRisk === true && (
                       <span className="urgent-badge-pill" style={{ background: '#7c3aed', color: '#fff' }}>
                         <Biohazard size={11} /> Bio-Risk
                       </span>

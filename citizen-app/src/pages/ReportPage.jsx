@@ -55,6 +55,17 @@ const STEPS = {
   ERROR: "error",
 };
 
+/**
+ * Convert numeric AI confidence (0.0–1.0) to a qualitative label.
+ * The numeric value is kept internally; this is display-only.
+ */
+function confidenceLabel(confidence) {
+  if (confidence === null || confidence === undefined) return "Unavailable";
+  if (confidence >= 0.85) return "High";
+  if (confidence >= 0.65) return "Moderate";
+  return "Low";
+}
+
 export default function ReportPage() {
   const navigate = useNavigate();
   const [step, setStep] = useState(STEPS.CAPTURE);
@@ -75,7 +86,7 @@ export default function ReportPage() {
   const [priorityReasons, setPriorityReasons] = useState([]);
   const [citizenProfile, setCitizenProfile] = useState(null);
   const [analysisStage, setAnalysisStage] = useState(
-    "Analyzing image with Gemini Vision...",
+    "Analyzing waste evidence with Vision AI...",
   );
 
   // Load citizen profile on auth ready
@@ -174,6 +185,7 @@ export default function ReportPage() {
       const rawResult = await analyzeWasteImage(
         compressed.base64,
         compressed.mimeType,
+        comment,
       );
 
       // Compatibility bridge (Badge 2): gemini.js now returns `primaryWasteType`
@@ -412,7 +424,7 @@ export default function ReportPage() {
               onClick={handleAnalyze}
             >
               <Sparkles size={18} />
-              <span>Analyze with Gemini AI →</span>
+              <span>Analyze with Vision AI →</span>
             </button>
           ) : (
             <p className="hint-text">
@@ -527,7 +539,7 @@ export default function ReportPage() {
             {aiResult.bioWasteRisk === true && (
               <div className="bio-waste-alert-pill">
                 <AlertTriangle size={14} />
-                <span>Biohazard / Clinical Waste Risk Flagged</span>
+                <span>Potential Bio-Waste Risk — Needs Verification</span>
               </div>
             )}
             {aiResult.bioWasteRisk === "unknown" && (
@@ -555,12 +567,17 @@ export default function ReportPage() {
                 </span>
               </div>
               <div className="assessment-item">
-                <span className="assessment-label">Confidence</span>
+                <span className="assessment-label">
+                  Confidence
+                  <span
+                    className="confidence-tooltip"
+                    title="AI-assessed confidence from available visual evidence; not a guaranteed probability of correctness."
+                  >
+                    {" "}ⓘ
+                  </span>
+                </span>
                 <span className="assessment-value">
-                  {aiResult.confidence !== null &&
-                  aiResult.confidence !== undefined
-                    ? `${Math.round(aiResult.confidence * 100)}%`
-                    : "N/A"}
+                  {confidenceLabel(aiResult.confidence)}
                 </span>
               </div>
               <div className="assessment-item full-span">
@@ -581,6 +598,38 @@ export default function ReportPage() {
               <p className="assessment-reasoning">
                 <strong>AI Reasoning:</strong> {aiResult.reasoning}
               </p>
+            )}
+
+            {aiResult.providerUsed && (
+              <div
+                style={{
+                  fontSize: "0.78rem",
+                  color: "#6b7280",
+                  marginTop: "8px",
+                  borderTop: "1px dashed #e5e7eb",
+                  paddingTop: "6px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <span>
+                  Analysis provider:{" "}
+                  <strong>
+                    {aiResult.providerUsed === "groq"
+                      ? "Groq Vision"
+                      : aiResult.providerUsed === "ollama"
+                      ? "Local Ollama"
+                      : aiResult.providerUsed === "gemini"
+                      ? "Gemini Vision"
+                      : "Vision AI"}
+                  </strong>
+                </span>
+                {typeof aiResult.executionTimeMs === "number" &&
+                  aiResult.executionTimeMs > 0 && (
+                    <span>{aiResult.executionTimeMs}ms</span>
+                  )}
+              </div>
             )}
           </div>
 

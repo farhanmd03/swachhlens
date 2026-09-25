@@ -2632,3 +2632,18 @@ body {
   font-style: italic;
   line-height: 1.4;
 }
+
+/* ── Confidence Indicator Tooltip ───────────────────────────────── */
+.confidence-tooltip {
+  cursor: help;
+  color: var(--text-muted);
+  font-size: 0.82em;
+  opacity: 0.85;
+  transition: opacity 0.15s ease;
+  user-select: none;
+}
+
+.confidence-tooltip:hover {
+  opacity: 1;
+  color: var(--primary);
+}

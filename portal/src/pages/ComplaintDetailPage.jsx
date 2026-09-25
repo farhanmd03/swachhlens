@@ -40,6 +40,13 @@ import {
   X,
 } from 'lucide-react';
 
+function confidenceLabel(confidence) {
+  if (confidence === null || confidence === undefined) return 'Unavailable';
+  if (confidence >= 0.85) return 'High';
+  if (confidence >= 0.65) return 'Moderate';
+  return 'Low';
+}
+
 export default function ComplaintDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -213,7 +220,7 @@ export default function ComplaintDetailPage() {
               <span>Critical Hazard</span>
             </span>
           )}
-          {aiResult?.bioWasteRisk && (
+          {aiResult?.bioWasteRisk === true && (
             <span className="urgent-badge-pill" style={{ background: '#7c3aed', color: '#fff' }}>
               <Biohazard size={12} />
               <span>Biohazard Alert</span>
@@ -376,11 +383,19 @@ export default function ComplaintDetailPage() {
                 <span className="pipeline-step-badge">AI Vision Analysis</span>
               </div>
 
-              {aiResult.bioWasteRisk && (
+              {aiResult.bioWasteRisk === true && (
                 <div className="biohazard-banner-alert">
                   <Biohazard size={16} />
                   <span>
                     <strong>Bio-Waste Risk Identified:</strong> Potential clinical or biological material detected.
+                  </span>
+                </div>
+              )}
+              {aiResult.bioWasteRisk === 'unknown' && (
+                <div className="biohazard-banner-alert" style={{ background: '#fef3c7', borderColor: '#fde68a', color: '#92400e' }}>
+                  <AlertTriangle size={16} />
+                  <span>
+                    <strong>Bio-Waste Risk Undetermined:</strong> Precaution advised during on-site inspection.
                   </span>
                 </div>
               )}
@@ -399,9 +414,11 @@ export default function ComplaintDetailPage() {
                   </strong>
                 </div>
                 <div className="ai-stat-box">
-                  <span className="ai-stat-k">Confidence</span>
+                  <span className="ai-stat-k" title="AI-assessed confidence from available visual evidence; not a guaranteed probability of correctness.">
+                    Confidence ⓘ
+                  </span>
                   <strong className="ai-stat-v">
-                    {Math.round((aiResult.confidence || 0) * 100)}%
+                    {confidenceLabel(aiResult.confidence)}
                   </strong>
                 </div>
                 <div className="ai-stat-box">

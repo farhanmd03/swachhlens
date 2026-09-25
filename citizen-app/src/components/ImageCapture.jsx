@@ -48,7 +48,7 @@ export default function ImageCapture({ onImageSelect, previewUrl, disabled }) {
           </div>
           <h4 className="upload-title">Add a Photo of the Waste</h4>
           <p className="upload-subtitle">
-            Clear photos help Gemini AI accurately estimate volume and categorize waste type.
+            Clear photos help Vision AI accurately estimate volume and categorize waste type.
           </p>
 
           <div className="upload-actions">
