@@ -9,6 +9,7 @@ import {
   where,
 } from 'firebase/firestore';
 import { db } from '../config/firebase.js';
+import { updateTeamLoad } from './teamService.js';
 
 /**
  * Subscribe to real-time complaints updates, ordered by priorityScore descending.
@@ -177,6 +178,15 @@ export async function updateComplaint(complaintId, updates) {
     // Apply any automatic timestamp
     ...lifecycleUpdates,
   });
+
+  // Safely decrement assigned team's active workload counter upon resolution (exactly once)
+  if (newStatus === 'resolved' && data.status !== 'resolved' && data.assignedTeam) {
+    try {
+      await updateTeamLoad(data.assignedTeam, -1);
+    } catch (loadErr) {
+      console.warn(`Failed to decrement workload for team "${data.assignedTeam}":`, loadErr);
+    }
+  }
 }
 
 /**

@@ -54,6 +54,7 @@ export async function analyzeWithGroq({ base64Data, mimeType = 'image/jpeg', com
     response_format: {
       type: 'json_object',
     },
+    max_tokens: 600,
     temperature: 0.1,
     stream: false,
   };
