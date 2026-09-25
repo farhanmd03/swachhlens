@@ -178,14 +178,15 @@ export default function ReportPage() {
   const doAnalyze = async (compressed, position, computedHash) => {
     try {
       setStep(STEPS.ANALYZING);
-      setAnalysisStage(
-        "Classifying waste category, volume & biohazard risks...",
-      );
+      setAnalysisStage("Analyzing waste evidence with Vision AI...");
 
       const rawResult = await analyzeWasteImage(
         compressed.base64,
         compressed.mimeType,
         comment,
+        ({ message }) => {
+          if (message) setAnalysisStage(message);
+        },
       );
 
       // Compatibility bridge (Badge 2): gemini.js now returns `primaryWasteType`
@@ -240,7 +241,13 @@ export default function ReportPage() {
 
       setStep(STEPS.REVIEW);
     } catch (aiErr) {
-      setError(`AI analysis failed: ${aiErr.message}`);
+      console.warn("AI analysis failure details:", aiErr);
+      const friendlyMessage =
+        aiErr?.message?.includes("AI_ALL_PROVIDERS_UNAVAILABLE") ||
+        aiErr?.code === "AI_ALL_PROVIDERS_UNAVAILABLE"
+          ? "AI analysis is temporarily unavailable. Please retry."
+          : (aiErr?.message || "AI analysis is temporarily unavailable. Please retry.");
+      setError(friendlyMessage);
       setStep(STEPS.ERROR);
     }
   };

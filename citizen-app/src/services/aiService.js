@@ -56,7 +56,8 @@ function isFailoverEligible(error) {
 export async function analyzeWasteImage(
   base64Data,
   mimeType = 'image/jpeg',
-  comment = ''
+  comment = '',
+  onProgress = null
 ) {
   if (!base64Data) {
     throw new Error('Image data missing for AI analysis.');
@@ -87,6 +88,14 @@ export async function analyzeWasteImage(
     console.log(
       `[SwachhLens AI Router] Attempting provider ${i + 1}/${providerPlan.length}: ${name}`
     );
+
+    if (i > 0 && typeof onProgress === 'function') {
+      const fallbackMsg =
+        name === 'ollama'
+          ? 'Cloud AI unavailable — attempting local AI...'
+          : 'Primary AI unavailable — trying cloud fallback...';
+      onProgress({ provider: name, message: fallbackMsg });
+    }
 
     try {
       const response = await fn({ base64Data, mimeType, comment });
