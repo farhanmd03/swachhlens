@@ -12,12 +12,15 @@ import AppLogoIcon from '../components/AppLogoIcon.jsx';
 import {
   ESTABLISHMENT_TYPES,
   ESTABLISHMENT_TYPE_LABELS,
+  SERVICE_FREQUENCIES,
+  SERVICE_FREQUENCY_LABELS,
   WASTE_STREAMS,
   WASTE_STREAM_LABELS,
   COMMERCIAL_SCALES,
   COMMERCIAL_SCALE_LABELS,
   SERVICE_WINDOWS,
   SERVICE_WINDOW_LABELS,
+  KOLKATA_OPERATING_ZONES,
   generateCommercialServiceNumber,
 } from '../config/commercialConstants.js';
 import {
@@ -40,30 +43,37 @@ import {
   ShieldCheck,
   Leaf,
   Info,
+  Repeat,
+  Compass,
 } from 'lucide-react';
 
-const DEFAULT_DEMO_GPS = { lat: 28.6315, lng: 77.2167 }; // New Delhi Connaught Place
+const DEFAULT_DEMO_GPS = { lat: 22.5726, lng: 88.3639 }; // Central Kolkata
 
 export default function BulkEventServicePage() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState(null);
-  const [step, setStep] = useState(1); // 1: Type, 2: Event Details, 3: Waste Profile, 4: AI Plan & Quote, 5: Success
+  const [step, setStep] = useState(1); // 1: Type & Frequency, 2: Location & Schedule, 3: Waste Profile, 4: AI Plan & Quote, 5: Success
 
   // Form State
-  const [establishmentType, setEstablishmentType] = useState('wedding_marriage');
+  const [establishmentType, setEstablishmentType] = useState('housing_society');
+  const [serviceFrequency, setServiceFrequency] = useState('one_time'); // 'one_time' | 'recurring'
+  const [operatingZone, setOperatingZone] = useState('zone_a');
+  const [venueName, setVenueName] = useState('');
+  const [address, setAddress] = useState('');
+  const [siteInstructions, setSiteInstructions] = useState('');
   const [eventDate, setEventDate] = useState(() => {
     const d = new Date();
     d.setDate(d.getDate() + 2);
     return d.toISOString().split('T')[0];
   });
-  const [serviceWindow, setServiceWindow] = useState('evening');
-  const [estimatedPeople, setEstimatedPeople] = useState('500');
-  const [address, setAddress] = useState('');
+  const [serviceWindow, setServiceWindow] = useState('morning');
+  const [estimatedPeople, setEstimatedPeople] = useState('300');
   const [gpsLocation, setGpsLocation] = useState(null);
   const [gpsLoading, setGpsLoading] = useState(false);
+  const [detectedLocationName, setDetectedLocationName] = useState('');
 
   const [wasteTypes, setWasteTypes] = useState(['food', 'plastic', 'paper']);
-  const [estimatedWasteScale, setEstimatedWasteScale] = useState('large');
+  const [estimatedWasteScale, setEstimatedWasteScale] = useState('medium');
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [imageFile, setImageFile] = useState(null);
   const [compressedImage, setCompressedImage] = useState(null);
@@ -95,16 +105,21 @@ export default function BulkEventServicePage() {
     }
   }, []);
 
-  // Auto-detect GPS on step 2
+  // Use Current Location
   const handleDetectLocation = async () => {
     setGpsLoading(true);
     setError(null);
     try {
       const pos = await getCurrentPosition();
       setGpsLocation(pos);
+      setDetectedLocationName('GPS Verified via Device Sensor');
+      if (!address) {
+        setAddress('Kolkata Metropolitan Area');
+      }
     } catch (err) {
-      console.warn('Geolocation fallback to default:', err.message);
+      console.warn('Geolocation fallback to Kolkata Central:', err.message);
       setGpsLocation(DEFAULT_DEMO_GPS);
+      setDetectedLocationName('Kolkata Operating Center (Demo Tag)');
     } finally {
       setGpsLoading(false);
     }
@@ -141,12 +156,16 @@ export default function BulkEventServicePage() {
     try {
       const businessDetails = {
         establishmentType,
+        serviceFrequency,
+        operatingZone,
+        venueName: venueName.trim() || 'Establishment / Society',
+        address: address.trim() || 'Kolkata Metropolitan Area',
+        siteInstructions: siteInstructions.trim(),
         eventDate,
         serviceWindow,
         estimatedPeople: parseInt(estimatedPeople, 10) || 300,
         estimatedWasteScale,
         wasteTypes,
-        address: address.trim() || 'Specified Venue Location',
         location: gpsLocation || DEFAULT_DEMO_GPS,
         specialInstructions,
       };
@@ -187,10 +206,32 @@ export default function BulkEventServicePage() {
       const trackingNumber = generateCommercialServiceNumber();
       const location = gpsLocation || DEFAULT_DEMO_GPS;
 
+      const businessDetails = {
+        establishmentType,
+        establishmentLabel: ESTABLISHMENT_TYPE_LABELS[establishmentType] || establishmentType,
+        serviceFrequency,
+        serviceFrequencyLabel: SERVICE_FREQUENCY_LABELS[serviceFrequency] || serviceFrequency,
+        operatingZone,
+        operatingZoneLabel: KOLKATA_OPERATING_ZONES[operatingZone]?.label || operatingZone,
+        venueName: venueName.trim() || 'Establishment / Society',
+        address: address.trim() || 'Kolkata Metropolitan Area',
+        siteInstructions: siteInstructions.trim(),
+        eventDate,
+        serviceWindow,
+        serviceWindowLabel: SERVICE_WINDOW_LABELS[serviceWindow] || serviceWindow,
+        estimatedPeople: parseInt(estimatedPeople, 10) || 300,
+        estimatedWasteScale,
+        scaleLabel: COMMERCIAL_SCALE_LABELS[estimatedWasteScale] || estimatedWasteScale,
+        wasteTypes,
+        wasteTypeLabels: wasteTypes.map((t) => WASTE_STREAM_LABELS[t] || t),
+        location,
+        specialInstructions: specialInstructions.trim(),
+      };
+
       const complaintDoc = {
         serviceType: 'commercial_bulk',
         requestType: 'bulk_event',
-        status: 'reported', // Compatible with deployed Firestore security rules
+        status: 'reported',
         commercialStatus: 'requested',
         complaintNumber: trackingNumber,
         citizenId,
@@ -199,43 +240,30 @@ export default function BulkEventServicePage() {
         timestamp: Date.now(),
         imageBase64: compressedImage?.base64 || '',
         gps: location,
-        comment: `${ESTABLISHMENT_TYPE_LABELS[establishmentType] || establishmentType} — Bulk waste collection (${COMMERCIAL_SCALE_LABELS[estimatedWasteScale]?.split(' ')[0] || 'Medium'})`,
-        
-        businessDetails: {
-          establishmentType,
-          establishmentLabel: ESTABLISHMENT_TYPE_LABELS[establishmentType] || establishmentType,
-          eventDate,
-          serviceWindow,
-          serviceWindowLabel: SERVICE_WINDOW_LABELS[serviceWindow] || serviceWindow,
-          estimatedPeople: parseInt(estimatedPeople, 10) || 300,
-          estimatedWasteScale,
-          scaleLabel: COMMERCIAL_SCALE_LABELS[estimatedWasteScale] || estimatedWasteScale,
-          wasteTypes,
-          wasteTypeLabels: wasteTypes.map((t) => WASTE_STREAM_LABELS[t] || t),
-          address: address.trim() || 'Venue Location',
-          location,
-          specialInstructions: specialInstructions.trim(),
-        },
-
+        comment: `${venueName ? `${venueName} — ` : ''}${ESTABLISHMENT_TYPE_LABELS[establishmentType] || establishmentType} (${SERVICE_FREQUENCY_LABELS[serviceFrequency] || 'One-time'})`,
+        businessDetails,
         commercialAssessment: assessment,
         commercialQuote: quote,
         customerApproval: {
           status: 'accepted',
           approvedAt: Date.now(),
+          lockedPrice: quote.indicativeTotal,
+          priceLocked: false, // will be confirmed by operator
+          decision: 'initial_booking',
         },
 
-        // Civic compatibility fields to guarantee smooth ingestion by existing pipeline
+        // Civic compatibility fields
         aiResult: {
           wasteType: 'mixed_commercial',
           volumeEstimate: estimatedWasteScale,
           confidence: assessment?.confidence || 0.9,
-          reasoning: assessment?.wasteProfile || 'Bulk event waste collection',
+          reasoning: assessment?.wasteProfile || 'Bulk waste collection',
         },
-        priorityScore: 70, // Commercial SLA priority default
+        priorityScore: 70, // Commercial SLA priority
         priorityReasons: [
           'Commercial Bulk Service Request',
-          `${COMMERCIAL_SCALE_LABELS[estimatedWasteScale]?.split(' ')[0] || 'Medium'} Scale Generation`,
-          `Estimated Attendees: ${estimatedPeople}`,
+          `${ESTABLISHMENT_TYPE_LABELS[establishmentType] || establishmentType}`,
+          `Kolkata ${KOLKATA_OPERATING_ZONES[operatingZone]?.label.split('—')[1]?.trim() || 'Zone'}`,
           `Service Window: ${SERVICE_WINDOW_LABELS[serviceWindow] || serviceWindow}`,
         ],
         urgentEscalation: false,
@@ -270,9 +298,9 @@ export default function BulkEventServicePage() {
           <AppLogoIcon size={14} className="hero-sparkle" />
           <span>SwachhLens Services</span>
         </div>
-        <h1 className="commercial-title">Bulk & Event Waste Operations</h1>
+        <h1 className="commercial-title">Commercial & Bulk Waste Operations</h1>
         <p className="commercial-subtitle">
-          AI-assisted resource planning, segregated collection & dedicated municipal logistics for planned gatherings.
+          Dedicated resource planning, segregated collection & municipal logistics for Kolkata housing societies, venues & establishments.
         </p>
 
         {/* Stepper Indicator */}
@@ -284,7 +312,7 @@ export default function BulkEventServicePage() {
           <div className="step-connector" />
           <div className={`step-node ${step >= 2 ? 'active' : ''} ${step > 2 ? 'done' : ''}`}>
             <span className="step-num">2</span>
-            <span className="step-name">Event</span>
+            <span className="step-name">Location</span>
           </div>
           <div className="step-connector" />
           <div className={`step-node ${step >= 3 ? 'active' : ''} ${step > 3 ? 'done' : ''}`}>
@@ -294,7 +322,7 @@ export default function BulkEventServicePage() {
           <div className="step-connector" />
           <div className={`step-node ${step >= 4 ? 'active' : ''} ${step > 4 ? 'done' : ''}`}>
             <span className="step-num">4</span>
-            <span className="step-name">Quote & Plan</span>
+            <span className="step-name">Quote</span>
           </div>
         </div>
       </header>
@@ -306,17 +334,46 @@ export default function BulkEventServicePage() {
         </div>
       )}
 
-      {/* ── STEP 1: Establishment / Service Category ──────────────── */}
+      {/* ── STEP 1: Establishment & Service Frequency ──────────────── */}
       {step === 1 && (
         <div className="commercial-card step-card">
           <div className="card-header">
             <Building2 size={20} className="card-header-icon" />
             <div>
-              <h2 className="card-title">Select Establishment / Event Type</h2>
-              <p className="card-desc">Choose the category that best matches your planned operational activity.</p>
+              <h2 className="card-title">Select Establishment & Service Frequency</h2>
+              <p className="card-desc">Choose the Kolkata facility type and operational collection frequency.</p>
             </div>
           </div>
 
+          {/* Service Frequency Selector */}
+          <div className="frequency-selector-block">
+            <span className="section-label">Service Frequency</span>
+            <div className="frequency-toggle-group">
+              {SERVICE_FREQUENCIES.map((freqKey) => {
+                const isSelected = serviceFrequency === freqKey;
+                return (
+                  <button
+                    key={freqKey}
+                    type="button"
+                    className={`frequency-btn ${isSelected ? 'selected' : ''}`}
+                    onClick={() => setServiceFrequency(freqKey)}
+                  >
+                    <Repeat size={15} />
+                    <span>{SERVICE_FREQUENCY_LABELS[freqKey]}</span>
+                  </button>
+                );
+              })}
+            </div>
+            {serviceFrequency === 'recurring' && (
+              <p className="frequency-hint-note">
+                ℹ️ Regular scheduled collections receive allocated fixed route slots and dedicated container servicing.
+              </p>
+            )}
+          </div>
+
+          <div className="section-divider" />
+
+          <span className="section-label">Establishment / Venue Category</span>
           <div className="establishment-grid">
             {ESTABLISHMENT_TYPES.map((typeKey) => {
               const selected = establishmentType === typeKey;
@@ -332,7 +389,7 @@ export default function BulkEventServicePage() {
                   </div>
                   <div className="establishment-info">
                     <span className="establishment-name">{ESTABLISHMENT_TYPE_LABELS[typeKey]}</span>
-                    <span className="establishment-sub">Scheduled bulk collection & segregation</span>
+                    <span className="establishment-sub">Planned collection & segregation</span>
                   </div>
                   {selected && <CheckCircle2 size={18} className="option-check" />}
                 </button>
@@ -353,38 +410,71 @@ export default function BulkEventServicePage() {
               className="btn btn-primary"
               onClick={() => setStep(2)}
             >
-              <span>Continue to Event Details</span>
+              <span>Continue to Location & Logistics</span>
               <ArrowRight size={16} />
             </button>
           </div>
         </div>
       )}
 
-      {/* ── STEP 2: Event Logistics & Schedule ─────────────────────── */}
+      {/* ── STEP 2: Service Location & Site Access Instructions ─────── */}
       {step === 2 && (
         <div className="commercial-card step-card">
           <div className="card-header">
-            <Calendar size={20} className="card-header-icon" />
+            <MapPin size={20} className="card-header-icon" />
             <div>
-              <h2 className="card-title">Event Schedule & Attendance</h2>
-              <p className="card-desc">Provide attendance scale and venue timing for operational scheduling.</p>
+              <h2 className="card-title">Service Location & Site Access</h2>
+              <p className="card-desc">Provide establishment details, transit zone and on-ground access directions.</p>
             </div>
           </div>
 
           <div className="form-grid">
-            <div className="form-group">
-              <label htmlFor="eventDate">
-                <Calendar size={14} />
-                <span>Service / Event Date</span>
+            <div className="form-group full-width">
+              <label htmlFor="venueName">
+                <Building2 size={14} />
+                <span>Establishment / Venue / Society Name</span>
               </label>
               <input
-                id="eventDate"
-                type="date"
-                value={eventDate}
-                onChange={(e) => setEventDate(e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
+                id="venueName"
+                type="text"
+                value={venueName}
+                onChange={(e) => setVenueName(e.target.value)}
+                placeholder="e.g. Greenwood Park Housing Society / Hiland Park / Eco Park Banquet"
                 required
               />
+            </div>
+
+            <div className="form-group full-width">
+              <label htmlFor="address">
+                <MapPin size={14} />
+                <span>Address / Area / Locality</span>
+              </label>
+              <input
+                id="address"
+                type="text"
+                value={address}
+                onChange={(e) => setAddress(e.target.value)}
+                placeholder="e.g. Street 4, Sector V, Salt Lake / Action Area II, New Town"
+                required
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="operatingZone">
+                <Compass size={14} />
+                <span>Kolkata Operating & Transit Zone</span>
+              </label>
+              <select
+                id="operatingZone"
+                value={operatingZone}
+                onChange={(e) => setOperatingZone(e.target.value)}
+              >
+                {Object.entries(KOLKATA_OPERATING_ZONES).map(([k, z]) => (
+                  <option key={k} value={k}>
+                    {z.label} (+₹{z.transportAllowance} transit)
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="form-group">
@@ -406,45 +496,46 @@ export default function BulkEventServicePage() {
             </div>
 
             <div className="form-group">
+              <label htmlFor="eventDate">
+                <Calendar size={14} />
+                <span>Service / Collection Date</span>
+              </label>
+              <input
+                id="eventDate"
+                type="date"
+                value={eventDate}
+                onChange={(e) => setEventDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                required
+              />
+            </div>
+
+            <div className="form-group">
               <label htmlFor="estimatedPeople">
                 <Users size={14} />
-                <span>Expected Attendees / Guests</span>
+                <span>Approximate Occupancy / Attendees</span>
               </label>
               <input
                 id="estimatedPeople"
                 type="number"
                 value={estimatedPeople}
                 onChange={(e) => setEstimatedPeople(e.target.value)}
-                placeholder="e.g. 500"
-                min="50"
+                placeholder="e.g. 300"
+                min="20"
                 max="50000"
                 required
               />
             </div>
 
-            <div className="form-group full-width">
-              <label htmlFor="address">
-                <MapPin size={14} />
-                <span>Venue Name & Street Address</span>
-              </label>
-              <input
-                id="address"
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="e.g. Grand Heritage Banquet Hall, Main Ring Road"
-                required
-              />
-            </div>
-
+            {/* Geolocation Tagging */}
             <div className="form-group full-width location-detection-box">
               <div className="location-row">
                 <div className="location-status">
                   <MapPin size={16} className={gpsLocation ? 'text-green' : 'text-muted'} />
                   <span>
                     {gpsLocation
-                      ? `GPS Coordinates: ${gpsLocation.lat.toFixed(5)}, ${gpsLocation.lng.toFixed(5)}`
-                      : 'Coordinates not tagged'}
+                      ? `✓ Geotagged for routing: ${detectedLocationName || 'Location Verified'}`
+                      : 'Coordinates not yet attached to request'}
                   </span>
                 </div>
                 <button
@@ -454,9 +545,24 @@ export default function BulkEventServicePage() {
                   disabled={gpsLoading}
                 >
                   <RefreshCw size={13} className={gpsLoading ? 'spin' : ''} />
-                  <span>{gpsLoading ? 'Locating...' : 'Auto-Tag GPS'}</span>
+                  <span>{gpsLoading ? 'Locating...' : 'Use Current Location'}</span>
                 </button>
               </div>
+            </div>
+
+            {/* Site & Collection Instructions */}
+            <div className="form-group full-width">
+              <label htmlFor="siteInstructions">
+                <Info size={14} />
+                <span>Site & Collection Instructions</span>
+              </label>
+              <textarea
+                id="siteInstructions"
+                value={siteInstructions}
+                onChange={(e) => setSiteInstructions(e.target.value)}
+                placeholder="e.g. Entry via Gate 2; loading bay near basement ramp; mini-truck clearance height 3.2m; waste bins stored near utility block on west side; service lift available."
+                rows={3}
+              />
             </div>
           </div>
 
@@ -472,7 +578,7 @@ export default function BulkEventServicePage() {
             <button
               type="button"
               className="btn btn-primary"
-              disabled={!address.trim() || !estimatedPeople}
+              disabled={!address.trim() && !venueName.trim()}
               onClick={() => setStep(3)}
             >
               <span>Continue to Waste Profile</span>
@@ -482,19 +588,19 @@ export default function BulkEventServicePage() {
         </div>
       )}
 
-      {/* ── STEP 3: Waste Profile & Optional Photo ────────────────── */}
+      {/* ── STEP 3: Waste Profile & Material Streams ───────────────── */}
       {step === 3 && (
         <div className="commercial-card step-card">
           <div className="card-header">
             <Trash2 size={20} className="card-header-icon" />
             <div>
               <h2 className="card-title">Waste Profile & Material Streams</h2>
-              <p className="card-desc">Identify expected waste streams to generate recycling and containment recommendations.</p>
+              <p className="card-desc">Identify expected waste streams to generate resource planning and recovery recommendations.</p>
             </div>
           </div>
 
           <div className="section-block">
-            <label className="section-label">Select Expected Material Streams (Multi-select)</label>
+            <label className="section-label">Expected Material Streams (Multi-select)</label>
             <div className="stream-chip-grid">
               {WASTE_STREAMS.map((streamKey) => {
                 const checked = wasteTypes.includes(streamKey);
@@ -540,7 +646,7 @@ export default function BulkEventServicePage() {
           </div>
 
           <div className="section-block">
-            <label className="section-label">Site Photo (Optional — Visual AI Analysis)</label>
+            <label className="section-label">Site Photo (Optional — Visual Assessment)</label>
             <div className="image-upload-zone">
               {imagePreview ? (
                 <div className="image-preview-container">
@@ -560,8 +666,8 @@ export default function BulkEventServicePage() {
               ) : (
                 <label className="upload-dropzone">
                   <Camera size={26} className="upload-icon" />
-                  <span className="upload-prompt">Tap or click to photograph venue or waste accumulation</span>
-                  <span className="upload-sub">Assists AI in estimating container sizing & segregation needs</span>
+                  <span className="upload-prompt">Tap or click to photograph collection area or waste bins</span>
+                  <span className="upload-sub">Assists in verifying vehicle access and container sizing</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -571,17 +677,6 @@ export default function BulkEventServicePage() {
                 </label>
               )}
             </div>
-          </div>
-
-          <div className="section-block">
-            <label htmlFor="instructions" className="section-label">Special Operational Instructions (Optional)</label>
-            <textarea
-              id="instructions"
-              value={specialInstructions}
-              onChange={(e) => setSpecialInstructions(e.target.value)}
-              placeholder="e.g. Service gate on north side; load out after midnight; request wet/dry segregation bins..."
-              rows={3}
-            />
           </div>
 
           <div className="step-actions">
@@ -606,22 +701,22 @@ export default function BulkEventServicePage() {
         </div>
       )}
 
-      {/* ── STEP 4: AI Service Plan & Indicative Quote ────────────── */}
+      {/* ── STEP 4: AI Service Plan & Transparent Indicative Quote ─── */}
       {step === 4 && assessment && quote && (
         <div className="commercial-card step-card step-quote-card">
           <div className="card-header">
             <Sparkles size={20} className="card-header-icon text-sparkle" />
             <div>
-              <h2 className="card-title">AI-Assisted Service Plan & Quote</h2>
-              <p className="card-desc">Review the recommended operational deployment and indicative service tariff.</p>
+              <h2 className="card-title">AI Operational Assessment & Indicative Quote</h2>
+              <p className="card-desc">Review the transparent 8-part rate calculation and operational recommendations.</p>
             </div>
           </div>
 
-          {/* AI Service Plan Card */}
+          {/* AI Operational Assessment Card */}
           <div className="plan-summary-card">
             <div className="plan-summary-header">
-              <span className="plan-tag">AI-ASSISTED SERVICE PLAN</span>
-              <span className="confidence-pill">{Math.round((assessment.confidence || 0.9) * 100)}% Confidence</span>
+              <span className="plan-tag">OPERATIONAL RESOURCE PLAN</span>
+              <span className="confidence-pill">{Math.round((assessment.confidence || 0.9) * 100)}% Match</span>
             </div>
 
             <div className="plan-spec-grid">
@@ -633,7 +728,7 @@ export default function BulkEventServicePage() {
                 <span className="spec-label">Recommended Crew</span>
                 <strong className="spec-value highlight-blue">
                   <HardHat size={16} />
-                  <span>{assessment.estimatedCrew} Members</span>
+                  <span>{assessment.recommendedCrewSize || assessment.estimatedCrew} Personnel</span>
                 </strong>
                 {assessment.crewReasons?.length > 0 && (
                   <ul className="spec-reason-list">
@@ -658,7 +753,7 @@ export default function BulkEventServicePage() {
                 )}
               </div>
               <div className="spec-item">
-                <span className="spec-label">Operational Duration</span>
+                <span className="spec-label">Estimated Service Window</span>
                 <strong className="spec-value">
                   <Clock size={16} />
                   <span>~{assessment.estimatedDuration}</span>
@@ -666,20 +761,21 @@ export default function BulkEventServicePage() {
               </div>
             </div>
 
-            {/* Material Recovery / Recycling Opportunity */}
-            {assessment.recoverableStreams?.length > 0 && (
+            {/* Potential Recoverable Materials */}
+            {assessment.recoverableMaterials?.length > 0 && (
               <div className="recovery-spotlight-box">
                 <div className="recovery-header">
                   <Leaf size={16} className="text-green" />
-                  <strong>Material Recovery Opportunity: {assessment.recoveryOpportunity}</strong>
+                  <strong>Potential Recoverable Materials</strong>
                 </div>
                 <div className="recoverable-streams-tags">
-                  {assessment.recoverableStreams.map((st, i) => (
-                    <span key={i} className="stream-tag">♻️ {st}</span>
+                  {assessment.recoverableMaterials.map((mat, i) => (
+                    <span key={i} className="stream-tag">♻️ {mat}</span>
                   ))}
                 </div>
-                <p className="recovery-notes">{assessment.recoveryNotes}</p>
-                <span className="recovery-pathway">Suggested Pathway: {assessment.recoveryPathway}</span>
+                <p className="recovery-notes">
+                  <strong>Potential recovery / recycling pathway:</strong> Segregated on-site loading facilitates direct routing to authorized dry waste sorting and organic composting streams.
+                </p>
               </div>
             )}
 
@@ -689,11 +785,11 @@ export default function BulkEventServicePage() {
             </div>
           </div>
 
-          {/* Indicative Quotation Breakdown */}
+          {/* Transparent 8-Part Quotation Breakdown */}
           <div className="quote-breakdown-card">
             <div className="quote-card-header">
-              <span className="quote-title">INDICATIVE SERVICE ESTIMATE</span>
-              <span className="rate-version-tag">Rate Card {quote.rateCardVersion}</span>
+              <span className="quote-title">TRANSPARENT QUOTE BREAKDOWN (KOLKATA BASELINE)</span>
+              <span className="rate-version-tag">Rate Card v{quote.rateCardVersion}</span>
             </div>
 
             <div className="quote-line-items">
@@ -709,8 +805,8 @@ export default function BulkEventServicePage() {
 
               <div className="quote-total-row">
                 <div>
-                  <strong className="total-label">Indicative Total</strong>
-                  <span className="total-sub">Includes mobilization, labor & fleet logistics</span>
+                  <strong className="total-label">Total Indicative Estimate</strong>
+                  <span className="total-sub">Includes mobilization, workforce, fleet logistics & zone transport</span>
                 </div>
                 <strong className="total-amount">₹{quote.indicativeTotal.toLocaleString('en-IN')}</strong>
               </div>
@@ -738,7 +834,7 @@ export default function BulkEventServicePage() {
               onClick={handleSubmitServiceRequest}
             >
               <FileCheck size={18} />
-              <span>{submitting ? 'Submitting Service Booking...' : 'Accept Service Plan & Submit Booking'}</span>
+              <span>{submitting ? 'Submitting Service Request...' : 'Accept Indicative Quote & Submit'}</span>
             </button>
           </div>
         </div>
@@ -750,9 +846,9 @@ export default function BulkEventServicePage() {
           <div className="success-badge-icon">
             <CheckCircle2 size={44} className="text-green" />
           </div>
-          <h2 className="success-title">Service Booking Confirmed!</h2>
+          <h2 className="success-title">Service Request Registered!</h2>
           <p className="success-subtitle">
-            Your bulk waste collection request has been registered in the municipal operations queue.
+            Your commercial bulk waste collection request has been submitted to the Kolkata municipal operations queue.
           </p>
 
           <div className="success-tracking-box">
@@ -762,24 +858,30 @@ export default function BulkEventServicePage() {
 
           <div className="confirmation-details-grid">
             <div className="confirm-row">
-              <span className="confirm-label">Establishment</span>
-              <span className="confirm-value">{ESTABLISHMENT_TYPE_LABELS[establishmentType]}</span>
+              <span className="confirm-label">Establishment / Venue</span>
+              <span className="confirm-value">{venueName || ESTABLISHMENT_TYPE_LABELS[establishmentType]}</span>
             </div>
             <div className="confirm-row">
-              <span className="confirm-label">Event Date & Window</span>
+              <span className="confirm-label">Service Type & Frequency</span>
+              <span className="confirm-value">
+                {ESTABLISHMENT_TYPE_LABELS[establishmentType]} • {SERVICE_FREQUENCY_LABELS[serviceFrequency]}
+              </span>
+            </div>
+            <div className="confirm-row">
+              <span className="confirm-label">Scheduled Date & Window</span>
               <span className="confirm-value">{eventDate} ({SERVICE_WINDOW_LABELS[serviceWindow]})</span>
             </div>
             <div className="confirm-row">
-              <span className="confirm-label">Allocated Unit</span>
-              <span className="confirm-value">{assessment?.recommendedVehicle} ({assessment?.estimatedCrew} Operatives)</span>
+              <span className="confirm-label">Allocated Fleet Unit</span>
+              <span className="confirm-value">{assessment?.recommendedVehicle} ({assessment?.recommendedCrewSize || assessment?.estimatedCrew} Operatives)</span>
             </div>
             <div className="confirm-row">
               <span className="confirm-label">Indicative Estimate</span>
               <span className="confirm-value bold text-primary">₹{quote?.indicativeTotal?.toLocaleString('en-IN')}</span>
             </div>
             <div className="confirm-row">
-              <span className="confirm-label">Customer Approval</span>
-              <span className="confirm-value text-green">Accepted (Queued for Dispatch)</span>
+              <span className="confirm-label">Customer Status</span>
+              <span className="confirm-value text-green">Quote Accepted • Awaiting Operator Review & Lock</span>
             </div>
           </div>
 

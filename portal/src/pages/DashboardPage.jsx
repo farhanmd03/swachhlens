@@ -78,7 +78,7 @@ export default function DashboardPage() {
       (c) => c.status === 'completed_pending_verification' || c.status === 'resolved'
     ).length;
     const totalQuotedTariff = commercialList.reduce((sum, c) => {
-      const val = c.commercialQuote?.totalQuote || c.quotedTariff || 0;
+      const val = c.commercialQuote?.indicativeTotal || c.commercialQuote?.totalQuote || c.quotedTariff || 0;
       return sum + Number(val);
     }, 0);
     const recoverableCount = commercialList.filter(
@@ -271,9 +271,9 @@ export default function DashboardPage() {
               <p>Bulk event waste planning, resource recovery quotas, and scheduled team mobilizations.</p>
             </div>
             <div className="commercial-tariff-highlight">
-              <span className="tariff-k">Total Quoted Tariff</span>
+              <span className="tariff-k">Indicative Quoted Value</span>
               <span className="tariff-v">₹{commercialStats.totalQuotedTariff.toLocaleString('en-IN')}</span>
-              <span className="tariff-sub">Indicative operator rate card</span>
+              <span className="tariff-sub">Aggregate indicative estimate</span>
             </div>
           </div>
           <div className="commercial-kpi-cards-grid">
@@ -293,7 +293,7 @@ export default function DashboardPage() {
               <span className="comm-sub">Dispatched &amp; Active</span>
             </div>
             <div className="comm-card comm-card-verified">
-              <span className="comm-k">Completed &amp; Verified</span>
+              <span className="comm-k">Completed Services</span>
               <span className="comm-v">{commercialStats.completedVerified}</span>
               <span className="comm-sub">Services closed</span>
             </div>

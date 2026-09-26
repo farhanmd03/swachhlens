@@ -78,8 +78,15 @@ $$\text{Citizen Report} \longrightarrow \text{Gemini 3.6 Flash} \longrightarrow 
 ### 👷 Field Supervisor Workspace (`portal/src/pages/Supervisor*`)
 * **Team-Scoped Queue:** Supervisors authenticate and access only jobs assigned to their specific unit (`user.teamId`).
 * **Cross-Team Access Guard:** Deep-linking to other units' jobs is blocked with an Access Denied banner.
-* **Execution State Machine:** Step 1 (Mark Arrived) $\\rightarrow$ Step 2 (Start Work) $\\rightarrow$ Step 3 (Submit Completion Photo & Notes).
+* **Execution State Machine:** Step 1 (Mark Arrived) $\longrightarrow$ Step 2 (Start Work) $\longrightarrow$ Step 3 (Submit Completion Photo & Notes).
 * **Rework Notification Banner:** Incomplete jobs returned by municipal officers immediately appear with rework instructions.
+
+### 🏢 SwachhLens Services: Commercial & Bulk Operations (`citizen-app/src/pages/Bulk*` & `portal/`)
+* **Kolkata B2B Waste Planning:** Dedicated service booking for housing societies, residential complexes, wedding/banquet halls, exhibitions, and university campuses with frequency selection (One-time vs Recurring).
+* **Transparent 8-Part Pricing Engine (Rate Card v1.1):** Deterministic baseline calculating Base Mobilization, Field Crew Allocation, Fleet Tariff, Zone Transit Allowance (Kolkata Zones A–E), Disposal/Processing Allowance, Additional Vehicle Trips, Material Segregation Surcharge, and Rapid Service Window Adjustment.
+* **Operator Price Adjustment & Lock Governance:** Municipal operators review site realities (access constraints, stairs, extra volume) and issue formal revisions with standardized reasons; customers approve/decline in real-time; once confirmed, the tariff is permanently locked prior to dispatch.
+* **Material Recovery & Circularity Routing:** Transparent tagging of potential recoverable streams (Cardboard, PET bottles, Organic scraps) with qualitative recovery pathways without unverified facility claims.
+* **100% Civic vs Commercial Data Isolation:** Commercial records are strictly segregated from civic KPIs, civic priority algorithms, duplicate detection, and municipal alert centers to protect civic reporting integrity.
 
 ---
 

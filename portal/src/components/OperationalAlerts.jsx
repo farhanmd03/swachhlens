@@ -15,18 +15,21 @@ import {
  * Computes live operational alert cards from current Firestore complaint state.
  */
 export default function OperationalAlerts({ complaints, onApplyFilter }) {
-  if (!complaints || complaints.length === 0) return null;
+  const civicComplaints = (complaints || []).filter(
+    (c) => c.serviceType !== 'commercial_bulk' && !c.id?.startsWith('test-')
+  );
+  if (civicComplaints.length === 0) return null;
 
   const now = Date.now();
   const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
   // 1. Urgent action required (unresolved urgent complaints)
-  const urgentUnresolved = complaints.filter(
+  const urgentUnresolved = civicComplaints.filter(
     (c) => c.urgentEscalation && c.status !== 'resolved'
   );
 
   // 2. High priority unassigned (score >= 70 and not yet assigned/resolved)
-  const highPriorityUnassigned = complaints.filter(
+  const highPriorityUnassigned = civicComplaints.filter(
     (c) =>
       (c.priorityScore || 0) >= 70 &&
       ['reported', 'verified'].includes(c.status) &&
@@ -34,12 +37,12 @@ export default function OperationalAlerts({ complaints, onApplyFilter }) {
   );
 
   // 3. Potential duplicate cases
-  const duplicateCases = complaints.filter(
+  const duplicateCases = civicComplaints.filter(
     (c) => !!c.isDuplicateOf && c.status !== 'resolved'
   );
 
   // 4. Aging complaints (>24h unresolved)
-  const agingComplaints = complaints.filter(
+  const agingComplaints = civicComplaints.filter(
     (c) =>
       c.status !== 'resolved' &&
       c.timestamp &&
@@ -47,14 +50,14 @@ export default function OperationalAlerts({ complaints, onApplyFilter }) {
   );
 
   // 5. Sensitive locations (near school / hospital)
-  const sensitiveLocationComplaints = complaints.filter(
+  const sensitiveLocationComplaints = civicComplaints.filter(
     (c) =>
       ['near_school', 'near_hospital'].includes(c.aiResult?.locationSensitivityHint) &&
       c.status !== 'resolved'
   );
 
   // 6. Bio-waste / Hazardous alerts
-  const bioOrHazardComplaints = complaints.filter(
+  const bioOrHazardComplaints = civicComplaints.filter(
     (c) =>
       (c.aiResult?.wasteType === 'hazardous_waste' || c.aiResult?.bioWasteRisk === true) &&
       c.status !== 'resolved'

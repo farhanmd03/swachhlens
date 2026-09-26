@@ -6,22 +6,24 @@ import {
 import { analyzeWasteImage } from './aiService.js';
 
 /**
- * AI-Assisted Service Planning Engine for Commercial / Bulk & Event Waste
+ * AI-Assisted Service Planning Engine for Planned Bulk & Event Waste Operations
  *
  * Combines multimodal visual analysis (if image provided) with deterministic
  * operational rules to generate defensible, explainable resource plans.
  *
  * Core Principle:
  * Perception/Estimation from AI + Deterministic business logic -> Human-in-the-loop review.
+ * No unsupported tonnage promises, exact percentages, or arbitrary facility claims.
  */
 
 export async function generateCommercialAssessment({
-  establishmentType = 'wedding_marriage',
-  estimatedPeople = 500,
+  establishmentType = 'housing_society',
+  estimatedPeople = 400,
   estimatedWasteScale = 'medium',
   wasteTypes = ['food', 'plastic', 'paper'],
-  serviceWindow = 'evening',
+  serviceWindow = 'morning',
   specialInstructions = '',
+  operatingZone = 'zone_a',
   imageBase64 = null,
   mimeType = 'image/jpeg',
 }) {
@@ -30,7 +32,7 @@ export async function generateCommercialAssessment({
 
   // 1. Crew recommendation logic with explainable reasons
   let estimatedCrew = 3;
-  let recommendedVehicle = 'Mini Truck';
+  let recommendedVehicle = 'Collection Van';
   let estimatedDuration = '3–4 hours';
   const crewReasons = [];
   const vehicleReasons = [];
@@ -38,69 +40,81 @@ export async function generateCommercialAssessment({
   if (scale === 'very_large' || peopleCount >= 1500) {
     estimatedCrew = 6;
     recommendedVehicle = 'Mini Truck';
-    estimatedDuration = '5–8 hours';
-    crewReasons.push('Very large gathering volume (> 1,500 attendees)');
-    crewReasons.push('Heavy peak accumulation requires multi-point loading');
-    vehicleReasons.push('Payload exceeds standard van capacity; dedicated mini truck required');
-    vehicleReasons.push('Direct haulage to bulk transfer station');
+    estimatedDuration = '5–6 hours';
+    crewReasons.push('Substantial gathering / complex footprint (> 1,500 people)');
+    crewReasons.push('Multi-point collection required across site or campus grounds');
+    vehicleReasons.push('Volume requires heavy-duty mini truck for bulk containment');
+    vehicleReasons.push('High-capacity transfer to authorized municipal recovery point');
   } else if (scale === 'large' || peopleCount >= 600) {
     estimatedCrew = 4;
     recommendedVehicle = 'Mini Truck';
     estimatedDuration = '4–5 hours';
-    crewReasons.push(`Large event scale (~${peopleCount} attendees)`);
-    crewReasons.push('Dual-point collection: food waste segregation + dry recyclables');
-    vehicleReasons.push('Mini truck required for single-trip containment and transfer');
+    crewReasons.push(`Large-scale operation (~${peopleCount} people)`);
+    crewReasons.push('Segregated handling: wet organic stream + dry recyclables');
+    vehicleReasons.push('Mini truck allocated for single-trip collection and transport');
   } else if (scale === 'medium' || peopleCount >= 250) {
     estimatedCrew = 3;
     recommendedVehicle = 'Collection Van';
     estimatedDuration = '3–4 hours';
-    crewReasons.push(`Medium scale event (~${peopleCount} attendees)`);
-    crewReasons.push('Standard event turnaround with source-segregated bins');
-    vehicleReasons.push('Collection Van appropriate for medium payload volume');
+    crewReasons.push(`Medium scale establishment (~${peopleCount} people)`);
+    crewReasons.push('Standard turnaround with designated collection point sweep');
+    vehicleReasons.push('Collection Van appropriate for compact access and standard payload');
   } else {
     estimatedCrew = 2;
     recommendedVehicle = 'Collection Van';
     estimatedDuration = '2–3 hours';
-    crewReasons.push('Small scale localized event (< 250 attendees)');
-    crewReasons.push('Rapid manual containment and sweep');
-    vehicleReasons.push('Collection van suitable for compact access and rapid turnaround');
+    crewReasons.push('Small localized collection (< 250 people)');
+    crewReasons.push('Standard manual collection and sweep');
+    vehicleReasons.push('Collection Van suitable for narrow lane access');
   }
 
-  // Factor in waste types count
-  if (wasteTypes.length >= 4) {
-    estimatedCrew += 1;
-    crewReasons.push('Multi-stream segregation requires dedicated sorter on site');
+  // Factor in multi-stream handling
+  if (wasteTypes.length >= 3) {
+    crewReasons.push('Multi-stream segregation requires dedicated sorting handling');
   }
 
-  // 2. Material Recovery / Recycling Opportunity
-  const hasPlastic = wasteTypes.includes('plastic');
-  const hasPaper = wasteTypes.includes('paper');
-  const hasGlassMetal = wasteTypes.includes('glass_metal');
-  const hasFood = wasteTypes.includes('food');
+  // 2. Potential Recoverable Materials & Qualitative Recovery Pathway
+  const recoverableTags = [];
+  if (wasteTypes.includes('paper')) {
+    recoverableTags.push('Paper');
+    recoverableTags.push('Cardboard');
+  }
+  if (wasteTypes.includes('plastic')) {
+    recoverableTags.push('Plastic');
+  }
+  if (wasteTypes.includes('glass_metal')) {
+    recoverableTags.push('Metal');
+    recoverableTags.push('Glass');
+  }
+  if (wasteTypes.includes('other') || wasteTypes.includes('mixed')) {
+    recoverableTags.push('Other recyclable dry waste');
+  }
+  if (wasteTypes.includes('food')) {
+    recoverableTags.push('Compostable Food & Organics');
+  }
 
-  const recoverableStreams = [];
-  if (hasPlastic) recoverableStreams.push('PET & Beverage Bottles, Shrink Packaging');
-  if (hasPaper) recoverableStreams.push('Cardboard Packing Boxes & Decorative Paper');
-  if (hasGlassMetal) recoverableStreams.push('Glass Containers & Aluminum Beverage Cans');
+  // Ensure unique tags
+  const uniqueRecoverableMaterials = Array.from(new Set(recoverableTags));
 
   let recoveryOpportunity = 'Moderate';
-  let recoveryPathway = 'Authorized recycling/recovery partner (partner confirmation required)';
-  let recoveryNotes = 'Separate food and dry recyclable packaging at collection point where feasible.';
+  let recoveryPathway = 'Potential recovery / recycling pathway via authorized processing facilities';
+  let recoveryNotes = 'Separate dry packaging and wet organic material at the designated collection point.';
 
-  if (recoverableStreams.length >= 2) {
-    recoveryOpportunity = 'High';
-    recoveryNotes = 'High commercial recovery viability. Segregated dry streams can be routed directly to certified recycling partners, avoiding municipal landfill tipping fees.';
-  } else if (recoverableStreams.length === 0 && hasFood) {
-    recoveryOpportunity = 'High (Bio-methanation / Composting)';
-    recoveryPathway = 'Decentralized municipal wet-waste processing / composting unit';
-    recoveryNotes = '100% organic waste stream. Priority routing to bio-gasification / organic compost facility.';
+  if (uniqueRecoverableMaterials.length >= 3) {
+    recoveryOpportunity = 'High Viability';
+    recoveryPathway = 'Potential recovery / recycling pathway (segregated dry recyclables & composting)';
+    recoveryNotes = 'Multiple recyclable fractions identified. Pre-sorting at venue significantly enhances diversion potential.';
+  } else if (wasteTypes.includes('food') && !wasteTypes.includes('plastic')) {
+    recoveryOpportunity = 'High Organic Viability';
+    recoveryPathway = 'Potential recovery / composting pathway via authorized organic processing unit';
+    recoveryNotes = 'Predominantly organic material. Suitable for direct routing to authorized municipal composting or biomethanation.';
   }
 
-  // 3. Waste profile summary
-  const streamLabels = wasteTypes.map((t) => WASTE_STREAM_LABELS[t] || t).join(', ');
-  const wasteProfile = `${COMMERCIAL_SCALE_LABELS[scale]?.split(' ')[0] || 'Medium'} Event Waste (${streamLabels || 'Mixed solid waste'})`;
+  // 3. Operational summary plan
+  const estLabel = ESTABLISHMENT_TYPE_LABELS[establishmentType] || establishmentType;
+  const summaryPlan = `Planned operations service for ${estLabel} with ${estimatedCrew} personnel and ${recommendedVehicle}.`;
 
-  // 4. Optional Visual AI Enrichment
+  // 4. Optional Visual AI Enrichment (Cautious & Bounded)
   let visualAiUsed = false;
   let visualAiDetails = null;
 
@@ -109,7 +123,7 @@ export async function generateCommercialAssessment({
       const aiResult = await analyzeWasteImage(
         imageBase64,
         mimeType,
-        `Bulk/event waste assessment for ${ESTABLISHMENT_TYPE_LABELS[establishmentType] || establishmentType}`
+        `Bulk/event waste survey for ${estLabel}`
       );
       if (aiResult && aiResult.analysisStatus === 'success') {
         visualAiUsed = true;
@@ -126,25 +140,30 @@ export async function generateCommercialAssessment({
   }
 
   return {
-    wasteProfile,
+    summaryPlan,
     estimatedScale: scale,
-    estimatedCrew,
+    recommendedCrewSize: estimatedCrew,
+    recommendedCrew: estimatedCrew,
     recommendedVehicle,
+    recommendedTeamType: recommendedVehicle === 'Mini Truck' ? 'mini_truck' : 'manual_cleanup',
     estimatedDuration,
+    estimatedDurationHours: parseInt(estimatedDuration, 10) || 3,
     recoveryOpportunity,
-    recoverableStreams,
+    recoverableMaterials: uniqueRecoverableMaterials,
     recoveryPathway,
     recoveryNotes,
     crewReasons,
     vehicleReasons,
+    crewReasoning: crewReasons.join(' • '),
+    vehicleReasoning: vehicleReasons.join(' • '),
     confidence: visualAiUsed ? 0.94 : 0.89,
     operationalNotes:
       specialInstructions?.trim() ||
-      'Standard site containment. Bins deployed at main aggregation points.',
+      'Standard site collection point. Access verified for collection unit.',
     aiAssisted: true,
     visualAiUsed,
     visualAiDetails,
     assessmentDate: Date.now(),
-    disclaimer: 'AI-assisted estimate — operator review and site validation required.',
+    disclaimer: 'Illustrative prototype estimate; final operational plan and tariff subject to operator review.',
   };
 }

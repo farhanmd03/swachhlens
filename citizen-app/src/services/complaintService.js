@@ -38,7 +38,9 @@ export async function getCitizenComplaints(citizenId) {
     orderBy('timestamp', 'desc')
   );
   const snapshot = await getDocs(q);
-  return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+  return snapshot.docs
+    .map((d) => ({ id: d.id, ...d.data() }))
+    .filter((c) => !c.id.startsWith('test-'));
 }
 
 /**
@@ -111,11 +113,56 @@ export async function submitFeedback(complaintId, feedbackData) {
  */
 export async function approveCommercialQuote(complaintId) {
   const docRef = doc(db, 'complaints', complaintId);
+  const existing = await getDoc(docRef);
+  const data = existing.exists() ? existing.data() : {};
+  const lockedPrice = data.commercialQuote?.indicativeTotal || data.commercialQuote?.totalQuote || 0;
+
   await updateDoc(docRef, {
     customerApproval: {
       status: 'accepted',
       approvedAt: Date.now(),
+      lockedPrice,
+      priceLocked: true,
+      decision: 'accepted_initial',
     },
     status: 'approved',
+  });
+}
+
+/**
+ * Customer Action: Accept an updated / revised estimate from municipal operations.
+ * Locks the price and updates customerApproval state.
+ */
+export async function acceptPriceRevision(complaintId, updatedQuote) {
+  const docRef = doc(db, 'complaints', complaintId);
+  const existing = await getDoc(docRef);
+  const data = existing.exists() ? existing.data() : {};
+  const lockedPrice = updatedQuote?.indicativeTotal || updatedQuote?.totalQuote || data.commercialQuote?.indicativeTotal || 0;
+
+  await updateDoc(docRef, {
+    customerApproval: {
+      status: 'accepted',
+      approvedAt: Date.now(),
+      lockedPrice,
+      priceLocked: true,
+      decision: 'accepted_revision',
+    },
+    status: 'approved',
+  });
+}
+
+/**
+ * Customer Action: Decline an updated / revised estimate and cancel the request.
+ */
+export async function declinePriceRevision(complaintId, reason) {
+  const docRef = doc(db, 'complaints', complaintId);
+  await updateDoc(docRef, {
+    customerApproval: {
+      status: 'declined',
+      declinedAt: Date.now(),
+      decision: 'declined_revision',
+      customerNote: reason || 'Customer declined operator revised estimate',
+    },
+    status: 'requested',
   });
 }

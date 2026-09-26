@@ -25,7 +25,9 @@ export function subscribeToComplaints(onData, onError) {
   return onSnapshot(
     q,
     (snapshot) => {
-      const complaints = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const complaints = snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((c) => !c.id.startsWith('test-'));
       onData(complaints);
     },
     (error) => {
@@ -57,7 +59,9 @@ export function subscribeToTeamComplaints(teamId, onData, onError) {
   return onSnapshot(
     q,
     (snapshot) => {
-      const complaints = snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
+      const complaints = snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .filter((c) => !c.id.startsWith('test-'));
       // Client-side sort by priorityScore descending without requiring server composite index
       complaints.sort((a, b) => (b.priorityScore ?? 0) - (a.priorityScore ?? 0));
       onData(complaints);
@@ -298,4 +302,95 @@ export async function overrideCommercialDispatch(complaintId, teamId, vehicle) {
       console.warn('Failed to increment team load:', e);
     }
   }
+}
+
+/**
+ * Municipal Operator Action: Request price adjustment for commercial bulk service.
+ *
+ * @param {string} complaintId
+ * @param {Object} adjustmentData
+ * @param {Object} adjustmentData.revisedQuote - The revised 8-part quote object
+ * @param {string} adjustmentData.reason - Human-readable reason
+ * @param {string} adjustmentData.reasonKey - Selected reason key from PRICE_ADJUSTMENT_REASONS
+ * @param {string} [adjustmentData.operatorNote] - Detailed note from operator
+ * @param {string} [adjustmentData.operatorUid] - Staff UID
+ * @param {string} [adjustmentData.operatorName] - Staff name
+ */
+export async function requestPriceAdjustment(complaintId, { revisedQuote, reason, reasonKey, operatorNote, operatorUid, operatorName }) {
+  const docRef = doc(db, 'complaints', complaintId);
+  const existing = await getDoc(docRef);
+  if (!existing.exists()) throw new Error(`Complaint ${complaintId} not found.`);
+  const data = existing.data();
+
+  const originalQuote = data.commercialQuote || null;
+  const originalTotal = originalQuote?.indicativeTotal || originalQuote?.totalQuote || 0;
+  const newTotal = revisedQuote?.indicativeTotal || revisedQuote?.totalQuote || 0;
+  const difference = newTotal - originalTotal;
+
+  const priceAdjustment = {
+    originalQuote,
+    revisedQuote,
+    difference,
+    reason: reason || 'Operational adjustment based on site requirements',
+    reasonKey: reasonKey || 'site_access',
+    operatorNote: operatorNote?.trim() || '',
+    requestedBy: {
+      uid: operatorUid || 'operator',
+      name: operatorName || 'Municipal Operations Staff',
+      requestedAt: Date.now(),
+    },
+    status: 'pending_customer_approval',
+  };
+
+  const existingIsDuplicateOf = ('isDuplicateOf' in data) ? (data.isDuplicateOf ?? null) : null;
+
+  await updateDoc(docRef, {
+    citizenId: data.citizenId,
+    imageBase64: data.imageBase64,
+    gps: data.gps,
+    timestamp: data.timestamp,
+    comment: data.comment,
+    aiResult: data.aiResult,
+    priorityScore: data.priorityScore,
+    urgentEscalation: data.urgentEscalation,
+    isDuplicateOf: existingIsDuplicateOf,
+
+    status: data.status,
+    priceAdjustment,
+    commercialQuote: revisedQuote,
+  });
+}
+
+/**
+ * Municipal Operator Action: Confirm Price Lock on commercial service.
+ */
+export async function lockCommercialPrice(complaintId, lockedAmount, operatorUid, operatorName) {
+  const docRef = doc(db, 'complaints', complaintId);
+  const existing = await getDoc(docRef);
+  if (!existing.exists()) throw new Error(`Complaint ${complaintId} not found.`);
+  const data = existing.data();
+  const existingIsDuplicateOf = ('isDuplicateOf' in data) ? (data.isDuplicateOf ?? null) : null;
+
+  await updateDoc(docRef, {
+    citizenId: data.citizenId,
+    imageBase64: data.imageBase64,
+    gps: data.gps,
+    timestamp: data.timestamp,
+    comment: data.comment,
+    aiResult: data.aiResult,
+    priorityScore: data.priorityScore,
+    urgentEscalation: data.urgentEscalation,
+    isDuplicateOf: existingIsDuplicateOf,
+
+    status: data.status,
+    priceLock: {
+      isLocked: true,
+      lockedAmount: lockedAmount || data.commercialQuote?.indicativeTotal || data.commercialQuote?.totalQuote || 0,
+      lockedAt: Date.now(),
+      lockedBy: {
+        uid: operatorUid || 'operator',
+        name: operatorName || 'Municipal Operations Staff',
+      },
+    },
+  });
 }

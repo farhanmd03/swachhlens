@@ -60,7 +60,12 @@ function inferAreaName(lat, lng) {
  */
 export function computeWasteHotspots(complaints, clusterRadiusMeters = 800) {
   const valid = complaints.filter(
-    (c) => c.gps && typeof c.gps.lat === 'number' && typeof c.gps.lng === 'number'
+    (c) =>
+      c.gps &&
+      typeof c.gps.lat === 'number' &&
+      typeof c.gps.lng === 'number' &&
+      c.serviceType !== 'commercial_bulk' &&
+      !c.id?.startsWith('test-')
   );
 
   if (valid.length === 0) return [];

@@ -6,6 +6,8 @@ import {
   verifyAndResolveComplaint,
   requestJobRework,
   acceptCommercialAiDispatch,
+  requestPriceAdjustment,
+  lockCommercialPrice,
 } from '../services/complaintService.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import PriorityBadge from '../components/PriorityBadge.jsx';
@@ -24,6 +26,7 @@ import {
   COMMERCIAL_SCALE_LABELS,
   WASTE_STREAM_LABELS,
   SERVICE_WINDOW_LABELS,
+  PRICE_ADJUSTMENT_REASONS,
 } from '../config/commercialConstants.js';
 import {
   ArrowLeft,
@@ -78,6 +81,12 @@ export default function ComplaintDetailPage() {
   const [reworkReasonInput, setReworkReasonInput] = useState('');
   const [resolvedTeamName, setResolvedTeamName] = useState('');
   const [activeTeams, setActiveTeams] = useState([]);
+
+  // Price Revision Modal State
+  const [showPriceModal, setShowPriceModal] = useState(false);
+  const [adjustmentReasonKey, setAdjustmentReasonKey] = useState('site_access');
+  const [revisedAmount, setRevisedAmount] = useState('');
+  const [operatorPriceNote, setOperatorPriceNote] = useState('');
 
   useEffect(() => {
     getActiveTeams().then(setActiveTeams).catch(() => {});
@@ -150,6 +159,57 @@ export default function ComplaintDetailPage() {
       setTimeout(() => setSuccessMsg(null), 3500);
     } catch (err) {
       setError(`Failed to assign unit: ${err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handlePriceAdjustmentSubmit = async (e) => {
+    e.preventDefault();
+    if (!revisedAmount || isNaN(Number(revisedAmount))) {
+      setError('Please provide a valid revised quote amount.');
+      return;
+    }
+    try {
+      setActionLoading(true);
+      setError(null);
+      const newTotal = Math.round(Number(revisedAmount));
+      const currQuote = complaint?.commercialQuote || {};
+      const updatedQuote = {
+        ...currQuote,
+        indicativeTotal: newTotal,
+        totalQuote: newTotal,
+      };
+
+      await requestPriceAdjustment(id, {
+        revisedQuote: updatedQuote,
+        reason: PRICE_ADJUSTMENT_REASONS[adjustmentReasonKey] || 'Operational adjustment based on site requirements',
+        reasonKey: adjustmentReasonKey,
+        operatorNote: operatorPriceNote,
+        operatorUid: 'operator',
+        operatorName: 'Municipal Operations Staff',
+      });
+
+      setShowPriceModal(false);
+      setSuccessMsg('Price adjustment submitted! Sent to customer for approval.');
+      setTimeout(() => setSuccessMsg(null), 3500);
+    } catch (err) {
+      setError(`Failed to submit price adjustment: ${err.message}`);
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleConfirmPriceLock = async () => {
+    try {
+      setActionLoading(true);
+      setError(null);
+      const lockedVal = complaint?.commercialQuote?.indicativeTotal || complaint?.commercialQuote?.totalQuote || 0;
+      await lockCommercialPrice(id, lockedVal, 'operator', 'Municipal Operations Staff');
+      setSuccessMsg('Price locked! Service tariff is now confirmed.');
+      setTimeout(() => setSuccessMsg(null), 3500);
+    } catch (err) {
+      setError(`Failed to lock price: ${err.message}`);
     } finally {
       setActionLoading(false);
     }
@@ -418,12 +478,68 @@ export default function ComplaintDetailPage() {
                 )}
               </div>
 
-              {/* Itemized Indicative Quotation Breakdown */}
+              {/* Itemized Indicative Quotation Breakdown & Price Governance */}
               <div className="portal-card">
-                <h4 className="card-header-title">
-                  <DollarSign size={16} />
-                  <span>Itemized Indicative Quotation</span>
-                </h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                  <h4 className="card-header-title" style={{ margin: 0 }}>
+                    <DollarSign size={16} />
+                    <span>Transparent Indicative Quotation</span>
+                  </h4>
+                  {complaint.priceLock?.isLocked ? (
+                    <span className="price-locked-pill" style={{
+                      background: '#ecfdf5',
+                      color: '#065f46',
+                      border: '1px solid #a7f3d0',
+                      padding: '3px 10px',
+                      borderRadius: '14px',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px'
+                    }}>
+                      <Lock size={12} /> PRICE LOCKED
+                    </span>
+                  ) : (
+                    <span style={{ fontSize: '0.78rem', color: '#64748b' }}>Rate Card v{commercialQuote?.rateCardVersion || '1.1'}</span>
+                  )}
+                </div>
+
+                {/* Price Adjustment Status Notice */}
+                {complaint.priceAdjustment && (
+                  <div className="price-adjustment-status-callout" style={{
+                    background: complaint.priceAdjustment.status === 'pending_customer_approval' ? '#fffbeb' : '#f0fdf4',
+                    border: `1px solid ${complaint.priceAdjustment.status === 'pending_customer_approval' ? '#fde68a' : '#bbf7d0'}`,
+                    borderRadius: '8px',
+                    padding: '10px 12px',
+                    marginBottom: '12px',
+                    fontSize: '0.82rem'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                      <AlertTriangle size={14} color={complaint.priceAdjustment.status === 'pending_customer_approval' ? '#d97706' : '#16a34a'} />
+                      <strong style={{ color: complaint.priceAdjustment.status === 'pending_customer_approval' ? '#92400e' : '#166534' }}>
+                        {complaint.priceAdjustment.status === 'pending_customer_approval'
+                          ? 'Price Adjustment Pending Customer Approval'
+                          : 'Price Adjustment Confirmed by Customer'}
+                      </strong>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px', fontSize: '0.78rem', color: '#475569' }}>
+                      <div>Original: ₹{(complaint.priceAdjustment.originalQuote?.indicativeTotal || 0).toLocaleString('en-IN')}</div>
+                      <div>Revised: ₹{(complaint.priceAdjustment.revisedQuote?.indicativeTotal || 0).toLocaleString('en-IN')}</div>
+                      <div style={{ fontWeight: 700, color: complaint.priceAdjustment.difference >= 0 ? '#b45309' : '#15803d' }}>
+                        Diff: {complaint.priceAdjustment.difference >= 0 ? `+₹${complaint.priceAdjustment.difference}` : `-₹${Math.abs(complaint.priceAdjustment.difference)}`}
+                      </div>
+                    </div>
+                    <div style={{ marginTop: '4px', fontSize: '0.78rem' }}>
+                      <strong>Reason:</strong> {complaint.priceAdjustment.reason}
+                    </div>
+                    {complaint.priceAdjustment.operatorNote && (
+                      <div style={{ marginTop: '2px', fontSize: '0.78rem', color: '#64748b' }}>
+                        <strong>Note:</strong> {complaint.priceAdjustment.operatorNote}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <table className="commercial-quote-table">
                   <thead>
@@ -434,58 +550,88 @@ export default function ComplaintDetailPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    <tr>
-                      <td>Base Mobilization</td>
-                      <td>Vehicle &amp; depot dispatch</td>
-                      <td style={{ textAlign: 'right', fontWeight: 600 }}>
-                        ₹{commercialQuote?.breakdown?.baseMobilization?.toLocaleString('en-IN') || '1,800'}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Crew Deployment</td>
-                      <td>
-                        {commercialQuote?.breakdown?.crewCount || 4} personnel × {commercialQuote?.breakdown?.durationHours || 4} hrs
-                      </td>
-                      <td style={{ textAlign: 'right', fontWeight: 600 }}>
-                        ₹{commercialQuote?.breakdown?.crewCost?.toLocaleString('en-IN') || '2,400'}
-                      </td>
-                    </tr>
-                    <tr>
-                      <td>Vehicle Operations</td>
-                      <td>{commercialQuote?.breakdown?.vehicleType || 'Mini Truck'} operational tariff</td>
-                      <td style={{ textAlign: 'right', fontWeight: 600 }}>
-                        ₹{commercialQuote?.breakdown?.vehicleCost?.toLocaleString('en-IN') || '1,600'}
-                      </td>
-                    </tr>
-                    {commercialQuote?.breakdown?.segregationSurcharge > 0 && (
-                      <tr>
-                        <td>Sorting Surcharge</td>
-                        <td>Multi-stream / post-collection sorting</td>
-                        <td style={{ textAlign: 'right', fontWeight: 600 }}>
-                          ₹{commercialQuote.breakdown.segregationSurcharge.toLocaleString('en-IN')}
-                        </td>
-                      </tr>
-                    )}
-                    {commercialQuote?.breakdown?.scaleAdjustment > 0 && (
-                      <tr>
-                        <td>Scale Multiplier</td>
-                        <td>Volume expansion factor</td>
-                        <td style={{ textAlign: 'right', fontWeight: 600 }}>
-                          ₹{commercialQuote.breakdown.scaleAdjustment.toLocaleString('en-IN')}
-                        </td>
-                      </tr>
+                    {commercialQuote?.lineItems && commercialQuote.lineItems.length > 0 ? (
+                      commercialQuote.lineItems.map((item, idx) => (
+                        <tr key={idx}>
+                          <td>{item.label}</td>
+                          <td>{item.detail}</td>
+                          <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                            ₹{item.amount?.toLocaleString('en-IN')}
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <>
+                        <tr>
+                          <td>Base Mobilization</td>
+                          <td>Vehicle &amp; depot dispatch</td>
+                          <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                            ₹{(commercialQuote?.baseService || 1800).toLocaleString('en-IN')}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>Crew Deployment</td>
+                          <td>Allocated field crew personnel</td>
+                          <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                            ₹{(commercialQuote?.crewCost || 2400).toLocaleString('en-IN')}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>Vehicle Operations</td>
+                          <td>Assigned fleet unit operational tariff</td>
+                          <td style={{ textAlign: 'right', fontWeight: 600 }}>
+                            ₹{(commercialQuote?.vehicleCost || 1600).toLocaleString('en-IN')}
+                          </td>
+                        </tr>
+                      </>
                     )}
                     <tr className="total-row">
-                      <td colSpan="2">Total Quoted Tariff</td>
-                      <td style={{ textAlign: 'right' }}>
-                        ₹{(commercialQuote?.totalQuote || 0).toLocaleString('en-IN')}
+                      <td colSpan="2">
+                        <strong>Total Indicative Estimate</strong>
+                        {complaint.priceLock?.isLocked && (
+                          <span style={{ display: 'block', fontSize: '0.72rem', color: '#059669', fontWeight: 400 }}>
+                            🔒 Price locked by municipal operations
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ textAlign: 'right', fontSize: '1.05rem', fontWeight: 800, color: '#0f172a' }}>
+                        ₹{(commercialQuote?.indicativeTotal || commercialQuote?.totalQuote || 0).toLocaleString('en-IN')}
                       </td>
                     </tr>
                   </tbody>
                 </table>
 
-                <p className="commercial-quote-disclaimer">
-                  * Indicative pricing / subject to operator review. Calculated via Municipal Rate Card v1.0. Final invoice settled upon verified post-event weight and close-out.
+                {/* Operator Price Revision & Lock Action Buttons */}
+                <div style={{ display: 'flex', gap: '8px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid #f1f5f9' }}>
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-small"
+                    style={{ flex: 1 }}
+                    onClick={() => {
+                      setRevisedAmount(String(commercialQuote?.indicativeTotal || commercialQuote?.totalQuote || 5000));
+                      setShowPriceModal(true);
+                    }}
+                  >
+                    <Edit size={13} />
+                    <span>Adjust Quote</span>
+                  </button>
+
+                  {!complaint.priceLock?.isLocked && (
+                    <button
+                      type="button"
+                      className="btn btn-primary btn-small"
+                      style={{ flex: 1 }}
+                      onClick={handleConfirmPriceLock}
+                      disabled={actionLoading}
+                    >
+                      <Lock size={13} />
+                      <span>Lock Price</span>
+                    </button>
+                  )}
+                </div>
+
+                <p className="commercial-quote-disclaimer" style={{ marginTop: '10px' }}>
+                  {commercialQuote?.disclaimer || '* Indicative estimate — subject to operator review and site validation. Tariff locked prior to operational execution.'}
                 </p>
               </div>
             </div>
@@ -1350,6 +1496,125 @@ export default function ComplaintDetailPage() {
                 >
                   <RotateCcw size={14} />
                   <span>{actionLoading ? 'Sending...' : 'Confirm Rework Request'}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── PRICE ADJUSTMENT MODAL (Commercial Services) ─────────── */}
+      {showPriceModal && (
+        <div className="modal-overlay" onClick={() => setShowPriceModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '480px' }}>
+            <div className="modal-header">
+              <div className="modal-header-title">
+                <h3>Adjust Indicative Estimate</h3>
+                <span className="modal-id-tag">{trackingId}</span>
+              </div>
+              <button className="modal-close" onClick={() => setShowPriceModal(false)}>✕</button>
+            </div>
+
+            <form onSubmit={handlePriceAdjustmentSubmit} className="modal-body">
+              <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '12px' }}>
+                Adjust the indicative quote based on ground reality (access, stairs, volume, or extra vehicle trips).
+              </p>
+
+              <div className="form-group" style={{ marginBottom: '12px' }}>
+                <label htmlFor="adj-reason">
+                  <span>Adjustment Reason <span className="required">*</span></span>
+                </label>
+                <select
+                  id="adj-reason"
+                  value={adjustmentReasonKey}
+                  onChange={(e) => setAdjustmentReasonKey(e.target.value)}
+                  disabled={actionLoading}
+                >
+                  {Object.entries(PRICE_ADJUSTMENT_REASONS).map(([k, label]) => (
+                    <option key={k} value={k}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '12px' }}>
+                <label htmlFor="adj-amount">
+                  <span>Revised Total Indicative Quote (₹) <span className="required">*</span></span>
+                </label>
+                <input
+                  id="adj-amount"
+                  type="number"
+                  value={revisedAmount}
+                  onChange={(e) => setRevisedAmount(e.target.value)}
+                  placeholder="e.g. 5200"
+                  step="50"
+                  required
+                  disabled={actionLoading}
+                />
+              </div>
+
+              {/* Live Preview of Difference */}
+              <div className="price-preview-callout" style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '10px 14px',
+                marginBottom: '12px',
+                fontSize: '0.85rem',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>Original Quote:</span>
+                  <strong>₹{(complaint?.commercialQuote?.indicativeTotal || complaint?.commercialQuote?.totalQuote || 0).toLocaleString('en-IN')}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                  <span>Revised Quote:</span>
+                  <strong style={{ color: '#0284c7' }}>₹{Number(revisedAmount || 0).toLocaleString('en-IN')}</strong>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #e2e8f0', paddingTop: '4px' }}>
+                  <span>Adjustment Difference:</span>
+                  <strong style={{
+                    color: (Number(revisedAmount || 0) - (complaint?.commercialQuote?.indicativeTotal || complaint?.commercialQuote?.totalQuote || 0)) >= 0
+                      ? '#d97706'
+                      : '#15803d'
+                  }}>
+                    {(Number(revisedAmount || 0) - (complaint?.commercialQuote?.indicativeTotal || complaint?.commercialQuote?.totalQuote || 0)) >= 0
+                      ? `+₹${(Number(revisedAmount || 0) - (complaint?.commercialQuote?.indicativeTotal || complaint?.commercialQuote?.totalQuote || 0)).toLocaleString('en-IN')}`
+                      : `-₹${Math.abs(Number(revisedAmount || 0) - (complaint?.commercialQuote?.indicativeTotal || complaint?.commercialQuote?.totalQuote || 0)).toLocaleString('en-IN')}`}
+                  </strong>
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '14px' }}>
+                <label htmlFor="adj-note">
+                  <span>Operational Note for Customer</span>
+                </label>
+                <textarea
+                  id="adj-note"
+                  rows={2}
+                  value={operatorPriceNote}
+                  onChange={(e) => setOperatorPriceNote(e.target.value)}
+                  placeholder="e.g. Third floor loading without lift; added manual handling allowance."
+                  disabled={actionLoading}
+                />
+              </div>
+
+              <div className="modal-footer" style={{ padding: '14px 0 0', marginTop: '14px', display: 'flex', gap: '8px' }}>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  onClick={() => setShowPriceModal(false)}
+                  disabled={actionLoading}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="btn btn-primary"
+                  disabled={actionLoading || !revisedAmount}
+                >
+                  <Send size={14} />
+                  <span>{actionLoading ? 'Submitting...' : 'Send Revision to Customer'}</span>
                 </button>
               </div>
             </form>

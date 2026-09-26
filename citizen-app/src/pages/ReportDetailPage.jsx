@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { subscribeToComplaint } from '../services/complaintService.js';
+import {
+  subscribeToComplaint,
+  acceptPriceRevision,
+  declinePriceRevision,
+} from '../services/complaintService.js';
 import { getTeamName } from '../services/teamService.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import PriorityBadge from '../components/PriorityBadge.jsx';
@@ -39,6 +43,8 @@ import {
   Info,
   MapPin,
   FileCheck,
+  Lock,
+  X,
 } from 'lucide-react';
 
 function confidenceLabel(confidence) {
@@ -56,6 +62,7 @@ export default function ReportDetailPage() {
   const [error, setError] = useState(null);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [resolvedTeamName, setResolvedTeamName] = useState('Assigned Response Team');
+  const [approvingPrice, setApprovingPrice] = useState(false);
 
   useEffect(() => {
     if (complaint?.assignedTeam) {
@@ -139,6 +146,31 @@ export default function ReportDetailPage() {
     const cAssessment = commercialAssessment || {};
     const cQuote = commercialQuote || {};
 
+    const isPriceLocked = complaint.priceLock?.isLocked || complaint.customerApproval?.priceLocked;
+    const lockedAmount = complaint.priceLock?.lockedAmount || complaint.customerApproval?.lockedPrice || cQuote.indicativeTotal;
+
+    const handleAcceptUpdatedEstimate = async () => {
+      try {
+        setApprovingPrice(true);
+        await acceptPriceRevision(id, complaint.priceAdjustment?.revisedQuote);
+      } catch (err) {
+        console.error('Failed to accept revised quote:', err);
+      } finally {
+        setApprovingPrice(false);
+      }
+    };
+
+    const handleDeclineUpdatedEstimate = async () => {
+      try {
+        setApprovingPrice(true);
+        await declinePriceRevision(id, 'Customer declined operator revised estimate');
+      } catch (err) {
+        console.error('Failed to decline revised quote:', err);
+      } finally {
+        setApprovingPrice(false);
+      }
+    };
+
     return (
       <div className="report-detail-page commercial-detail-page">
         <div className="detail-top-nav">
@@ -162,6 +194,22 @@ export default function ReportDetailPage() {
               <h2>{wasteLabel}</h2>
             </div>
             <div className="detail-badges-row">
+              {isPriceLocked && (
+                <span className="price-locked-tag" style={{
+                  background: '#ecfdf5',
+                  color: '#065f46',
+                  border: '1px solid #a7f3d0',
+                  padding: '4px 10px',
+                  borderRadius: '12px',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <Lock size={13} /> PRICE LOCKED
+                </span>
+              )}
               <StatusBadge status={status} />
             </div>
           </div>
@@ -177,6 +225,80 @@ export default function ReportDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Customer Price Approval Banner */}
+        {complaint.priceAdjustment && (
+          <div className="customer-price-approval-banner" style={{
+            background: complaint.priceAdjustment.status === 'pending_customer_approval' ? '#fffbeb' : '#f0fdf4',
+            border: `2px solid ${complaint.priceAdjustment.status === 'pending_customer_approval' ? '#f59e0b' : '#10b981'}`,
+            borderRadius: '12px',
+            padding: '16px',
+            marginBottom: '14px',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+              <AlertTriangle size={18} color={complaint.priceAdjustment.status === 'pending_customer_approval' ? '#d97706' : '#16a34a'} />
+              <strong style={{ fontSize: '1rem', color: complaint.priceAdjustment.status === 'pending_customer_approval' ? '#92400e' : '#166534' }}>
+                {complaint.priceAdjustment.status === 'pending_customer_approval'
+                  ? 'Updated Price Estimate Requires Your Approval'
+                  : 'Updated Estimate Accepted & Confirmed'}
+              </strong>
+            </div>
+            <p style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '10px' }}>
+              Municipal operations reviewed your site collection and submitted an updated operational estimate:
+            </p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', background: '#ffffff', padding: '10px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '10px' }}>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase' }}>Original Quote</span>
+                <strong style={{ fontSize: '0.95rem' }}>₹{(complaint.priceAdjustment.originalQuote?.indicativeTotal || 0).toLocaleString('en-IN')}</strong>
+              </div>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.72rem', color: '#0284c7', textTransform: 'uppercase' }}>Updated Quote</span>
+                <strong style={{ fontSize: '0.95rem', color: '#0284c7' }}>₹{(complaint.priceAdjustment.revisedQuote?.indicativeTotal || 0).toLocaleString('en-IN')}</strong>
+              </div>
+              <div>
+                <span style={{ display: 'block', fontSize: '0.72rem', color: '#64748b', textTransform: 'uppercase' }}>Difference</span>
+                <strong style={{ fontSize: '0.95rem', color: complaint.priceAdjustment.difference >= 0 ? '#b45309' : '#15803d' }}>
+                  {complaint.priceAdjustment.difference >= 0 ? `+₹${complaint.priceAdjustment.difference}` : `-₹${Math.abs(complaint.priceAdjustment.difference)}`}
+                </strong>
+              </div>
+            </div>
+
+            <div style={{ fontSize: '0.85rem', color: '#1e293b', marginBottom: '6px' }}>
+              <strong>Operational Reason:</strong> {complaint.priceAdjustment.reason}
+            </div>
+            {complaint.priceAdjustment.operatorNote && (
+              <div style={{ fontSize: '0.85rem', color: '#475569', marginBottom: '12px' }}>
+                <strong>Staff Note:</strong> "{complaint.priceAdjustment.operatorNote}"
+              </div>
+            )}
+
+            {complaint.priceAdjustment.status === 'pending_customer_approval' && (
+              <div style={{ display: 'flex', gap: '10px', marginTop: '12px' }}>
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  style={{ flex: 2, background: '#059669', borderColor: '#059669' }}
+                  onClick={handleAcceptUpdatedEstimate}
+                  disabled={approvingPrice}
+                >
+                  <Check size={16} />
+                  <span>{approvingPrice ? 'Processing...' : 'Accept Updated Estimate'}</span>
+                </button>
+                <button
+                  type="button"
+                  className="btn btn-secondary"
+                  style={{ flex: 1, color: '#dc2626', borderColor: '#fca5a5' }}
+                  onClick={handleDeclineUpdatedEstimate}
+                  disabled={approvingPrice}
+                >
+                  <X size={16} />
+                  <span>Decline &amp; Cancel</span>
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Live Cleanup Timeline */}
         <div className="detail-section-card">
@@ -317,7 +439,24 @@ export default function ReportDetailPage() {
                 <FileCheck size={16} />
                 <span>Indicative Service Estimate</span>
               </h3>
-              <span className="rate-version-tag">Rate Card {cQuote.rateCardVersion || 'v1.0'}</span>
+              {isPriceLocked ? (
+                <span className="price-locked-tag" style={{
+                  background: '#ecfdf5',
+                  color: '#065f46',
+                  border: '1px solid #a7f3d0',
+                  padding: '3px 10px',
+                  borderRadius: '12px',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}>
+                  <Lock size={12} /> PRICE LOCKED
+                </span>
+              ) : (
+                <span className="rate-version-tag">Rate Card v{cQuote.rateCardVersion || '1.1'}</span>
+              )}
             </div>
 
             <div className="quote-line-items">
@@ -333,10 +472,12 @@ export default function ReportDetailPage() {
 
               <div className="quote-total-row">
                 <div>
-                  <strong className="total-label">Indicative Total</strong>
-                  <span className="total-sub">Includes mobilization, labor & fleet logistics</span>
+                  <strong className="total-label">Total Indicative Estimate</strong>
+                  <span className="total-sub">
+                    {isPriceLocked ? '🔒 Final confirmed rate locked for execution' : 'Includes mobilization, workforce & transport allowance'}
+                  </span>
                 </div>
-                <strong className="total-amount">₹{cQuote.indicativeTotal?.toLocaleString('en-IN')}</strong>
+                <strong className="total-amount">₹{(isPriceLocked ? lockedAmount : cQuote.indicativeTotal)?.toLocaleString('en-IN')}</strong>
               </div>
             </div>
 

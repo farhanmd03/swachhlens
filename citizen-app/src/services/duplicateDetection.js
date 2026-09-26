@@ -74,6 +74,10 @@ export async function findDuplicateEvidence(wasteType, gps, currentImageHash = n
   for (const doc of snapshot.docs) {
     const data = doc.data();
 
+    // Isolate commercial records and test docs from civic duplicate detection
+    if (data.serviceType === 'commercial_bulk') continue;
+    if (doc.id.startsWith('test-')) continue;
+
     // Skip resolved complaints
     if (data.status === 'resolved') continue;
 
@@ -189,6 +193,8 @@ export async function countNearbyComplaints(gps, radiusMeters, timeWindowDays) {
 
   for (const doc of snapshot.docs) {
     const data = doc.data();
+    if (data.serviceType === 'commercial_bulk') continue;
+    if (doc.id.startsWith('test-')) continue;
     if (data.gps && data.gps.lat != null && data.gps.lng != null) {
       const distance = haversineDistance(
         gps.lat, gps.lng,

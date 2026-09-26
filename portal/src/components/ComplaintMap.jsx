@@ -11,9 +11,14 @@ import { MapPin, Send, ArrowRight, AlertTriangle, Flame } from 'lucide-react';
 export default function ComplaintMap({ complaints, hotspots = [], onMarkerClick }) {
   const navigate = useNavigate();
 
-  // Filter complaints with valid GPS
+  // Filter complaints with valid GPS - civic complaints only
   const validComplaints = complaints.filter(
-    (c) => c.gps && c.gps.lat != null && c.gps.lng != null
+    (c) =>
+      c.gps &&
+      c.gps.lat != null &&
+      c.gps.lng != null &&
+      c.serviceType !== 'commercial_bulk' &&
+      !c.id?.startsWith('test-')
   );
 
   const center =

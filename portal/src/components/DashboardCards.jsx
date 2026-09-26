@@ -13,20 +13,23 @@ import {
  * Clicking a card filters the Priority Queue table and scrolls down to it.
  */
 export default function DashboardCards({ complaints, onApplyFilter }) {
-  const total = complaints.length;
-  const pending = complaints.filter((c) =>
+  const civicComplaints = complaints.filter(
+    (c) => c.serviceType !== 'commercial_bulk' && !c.id?.startsWith('test-')
+  );
+  const total = civicComplaints.length;
+  const pending = civicComplaints.filter((c) =>
     ['reported', 'verified'].includes(c.status)
   ).length;
-  const urgent = complaints.filter((c) => c.urgentEscalation).length;
-  const inProgress = complaints.filter((c) =>
+  const urgent = civicComplaints.filter((c) => c.urgentEscalation).length;
+  const inProgress = civicComplaints.filter((c) =>
     ['assigned', 'in_progress'].includes(c.status)
   ).length;
-  const resolved = complaints.filter((c) => c.status === 'resolved').length;
+  const resolved = civicComplaints.filter((c) => c.status === 'resolved').length;
 
   const avgPriority =
     total > 0
       ? Math.round(
-          complaints.reduce((acc, c) => acc + (c.priorityScore || 0), 0) / total
+          civicComplaints.reduce((acc, c) => acc + (c.priorityScore || 0), 0) / total
         )
       : 0;
 
