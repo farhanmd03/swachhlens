@@ -64,6 +64,9 @@ export default function DispatchModal({ complaint, onClose }) {
     }
 
     setAssignedVehicle(rec?.vehicle || '');
+    if (status === 'reported' || status === 'verified') {
+      setStatus('assigned');
+    }
     setMode('dispatch');
   };
 
@@ -76,8 +79,17 @@ export default function DispatchModal({ complaint, onClose }) {
       setSaving(true);
       setError(null);
 
+      // Enforce status consistency:
+      // When a municipal operator confirms a NEW team assignment (previous was unassigned),
+      // and status is 'reported' or 'verified', it MUST transition to 'assigned'.
+      let finalStatus = status;
+      const isNewlyAssigned = Boolean(assignedTeam) && !complaint.assignedTeam;
+      if (isNewlyAssigned && (finalStatus === 'reported' || finalStatus === 'verified')) {
+        finalStatus = 'assigned';
+      }
+
       await updateComplaint(complaint.id, {
-        status,
+        status: finalStatus,
         assignedTeam: assignedTeam || null,
         assignedVehicle: assignedVehicle || null,
       });
@@ -268,7 +280,13 @@ export default function DispatchModal({ complaint, onClose }) {
                 <select
                   id="dispatch-team"
                   value={assignedTeam}
-                  onChange={(e) => setAssignedTeam(e.target.value)}
+                  onChange={(e) => {
+                    const newTeam = e.target.value;
+                    setAssignedTeam(newTeam);
+                    if (newTeam && !complaint?.assignedTeam && (status === 'reported' || status === 'verified')) {
+                      setStatus('assigned');
+                    }
+                  }}
                   disabled={saving || teamsLoading}
                 >
                   <option value="">— Select Operational Unit —</option>

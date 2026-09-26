@@ -10,6 +10,7 @@ import PriorityBadge from '../components/PriorityBadge.jsx';
 import DispatchModal from '../components/DispatchModal.jsx';
 import FeedbackPanel from '../components/FeedbackPanel.jsx';
 import LifecycleTimeline from '../components/LifecycleTimeline.jsx';
+import { getTeamName } from '../services/teamService.js';
 import {
   WASTE_TYPE_LABELS,
   VOLUME_LABELS,
@@ -60,6 +61,15 @@ export default function ComplaintDetailPage() {
   // Rework Modal State
   const [showReworkModal, setShowReworkModal] = useState(false);
   const [reworkReasonInput, setReworkReasonInput] = useState('');
+  const [resolvedTeamName, setResolvedTeamName] = useState('');
+
+  useEffect(() => {
+    if (complaint?.assignedTeam) {
+      getTeamName(complaint.assignedTeam).then(setResolvedTeamName);
+    } else {
+      setResolvedTeamName('');
+    }
+  }, [complaint?.assignedTeam]);
 
   const loadComplaint = async () => {
     try {
@@ -561,7 +571,14 @@ export default function ComplaintDetailPage() {
               <div className="dec-spec-item">
                 <span className="dec-k">Selected Team</span>
                 <strong className="dec-v">
-                  {assignedTeam || <span className="text-muted">Unassigned</span>}
+                  {assignedTeam ? (
+                    <>
+                      <span>{resolvedTeamName || 'Assigned Response Team'}</span>{' '}
+                      <span className="text-muted" style={{ fontSize: '0.8rem', fontWeight: 400 }}>({assignedTeam})</span>
+                    </>
+                  ) : (
+                    <span className="text-muted">Unassigned</span>
+                  )}
                 </strong>
               </div>
               <div className="dec-spec-item">

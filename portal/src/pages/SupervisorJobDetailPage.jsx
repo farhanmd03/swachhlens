@@ -9,6 +9,7 @@ import {
 } from '../services/complaintService.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import PriorityBadge from '../components/PriorityBadge.jsx';
+import { getTeamName } from '../services/teamService.js';
 import {
   WASTE_TYPE_LABELS,
   VOLUME_LABELS,
@@ -86,6 +87,14 @@ export default function SupervisorJobDetailPage({ user }) {
   const [afterImageBase64, setAfterImageBase64] = useState(null);
   const [completionNote, setCompletionNote] = useState('');
   const [imagePreview, setImagePreview] = useState(null);
+  const [resolvedTeamName, setResolvedTeamName] = useState('');
+
+  useEffect(() => {
+    const targetTeamId = complaint?.assignedTeam || user?.teamId;
+    if (targetTeamId) {
+      getTeamName(targetTeamId).then(setResolvedTeamName);
+    }
+  }, [complaint?.assignedTeam, user?.teamId]);
 
   useEffect(() => {
     if (!id) {
@@ -290,7 +299,7 @@ export default function SupervisorJobDetailPage({ user }) {
         <div className="header-title-box">
           <h2>{wasteLabel}</h2>
           <span className="incident-reported-date">
-            Assigned to {user?.teamId}: {new Date(complaint.assignedAt || timestamp).toLocaleString('en-IN')}
+            Assigned to {resolvedTeamName || user?.teamId || 'Response Unit'}: {new Date(complaint.assignedAt || timestamp).toLocaleString('en-IN')}
           </span>
         </div>
 
@@ -458,7 +467,12 @@ export default function SupervisorJobDetailPage({ user }) {
             <div className="reporter-details-grid">
               <div className="rep-row">
                 <span className="rep-k">Assigned Unit:</span>
-                <strong className="rep-v">{assignedTeam}</strong>
+                <strong className="rep-v">
+                  {resolvedTeamName || assignedTeam || 'Assigned Response Unit'}{' '}
+                  {assignedTeam && (
+                    <span className="text-muted" style={{ fontSize: '0.8rem', fontWeight: 400 }}>({assignedTeam})</span>
+                  )}
+                </strong>
               </div>
               <div className="rep-row">
                 <span className="rep-k">Vehicle Unit:</span>

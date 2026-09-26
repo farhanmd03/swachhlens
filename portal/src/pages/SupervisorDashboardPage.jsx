@@ -28,7 +28,7 @@ export default function SupervisorDashboardPage({ user }) {
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('active'); // default to active work view
+  const [filter, setFilter] = useState('all'); // default to all assigned work view
   const [historyMonth, setHistoryMonth] = useState(''); // format YYYY-MM for resolved history filter
 
   useEffect(() => {
@@ -63,49 +63,57 @@ export default function SupervisorDashboardPage({ user }) {
   }, [user?.teamId]);
 
   // ── Normalized Single Source of Truth Metrics ────────────────────
-  const totalWork = complaints.length;
-  const pendingStartCount = complaints.filter((c) => c.status === 'assigned').length;
-  const inProgressCount = complaints.filter((c) => c.status === 'in_progress').length;
-  const activeCount = pendingStartCount + inProgressCount;
-  const urgentCount = complaints.filter(
-    (c) =>
-      (c.urgentEscalation || c.aiResult?.bioWasteRisk === true || (c.priorityScore && c.priorityScore >= 70)) &&
-      (c.status === 'assigned' || c.status === 'in_progress')
-  ).length;
-  const awaitingVerificationCount = complaints.filter(
-    (c) => c.status === 'completed_pending_verification'
-  ).length;
-  const resolvedCount = complaints.filter((c) => c.status === 'resolved').length;
-   const completedCount = resolvedCount; // show only resolved complaints in completed view
-  const reworkCount = complaints.filter((c) => !!c.reworkReason && c.status === 'in_progress').length;
+  const PENDING_START_STATUSES = ['reported', 'verified', 'assigned'];
+  const isJobPendingStart = (c) =>
+    Boolean(c.assignedTeam) &&
+    PENDING_START_STATUSES.includes(c.status) &&
+    c.status !== 'in_progress' &&
+    c.status !== 'completed_pending_verification' &&
+    c.status !== 'resolved';
 
-           const filteredComplaints = complaints.filter((c) => {
-             if (filter === 'all') {
-               // Exclude resolved complaints from general view
-               return c.status !== 'resolved';
-             }
-             if (filter === 'pending') return c.status === 'assigned';
-             if (filter === 'in_progress') return c.status === 'in_progress';
-             if (filter === 'active') return c.status === 'assigned' || c.status === 'in_progress';
-             if (filter === 'urgent')
-               return (
-                 (c.urgentEscalation || c.aiResult?.bioWasteRisk === true || (c.priorityScore && c.priorityScore >= 70)) &&
-                 (c.status === 'assigned' || c.status === 'in_progress')
-               );
-             if (filter === 'awaiting_verification') return c.status === 'completed_pending_verification';
-             if (filter === 'completed') {
-               if (c.status !== 'resolved') return false;
-               if (historyMonth) {
-                 const resolvedAt = c.resolvedAt;
-                 if (!resolvedAt) return false;
-                 const month = new Date(resolvedAt).toISOString().slice(0,7); // YYYY-MM
-                 return month === historyMonth;
-               }
-               return true;
-             }
-             if (filter === 'rework') return !!c.reworkReason && c.status === 'in_progress';
-             return true;
-           });
+  const isJobInProgress = (c) => c.status === 'in_progress';
+  const isJobActive = (c) => isJobPendingStart(c) || isJobInProgress(c);
+  const isJobAwaitingVerification = (c) => c.status === 'completed_pending_verification';
+  const isJobResolved = (c) => c.status === 'resolved';
+
+  const isJobUrgent = (c) =>
+    isJobActive(c) &&
+    Boolean(
+      c.urgentEscalation ||
+      c.aiResult?.bioWasteRisk === true ||
+      (c.priorityScore && c.priorityScore >= 70)
+    );
+
+  const totalWork = complaints.length;
+  const pendingStartCount = complaints.filter(isJobPendingStart).length;
+  const inProgressCount = complaints.filter(isJobInProgress).length;
+  const activeCount = pendingStartCount + inProgressCount;
+  const urgentCount = complaints.filter(isJobUrgent).length;
+  const awaitingVerificationCount = complaints.filter(isJobAwaitingVerification).length;
+  const resolvedCount = complaints.filter(isJobResolved).length;
+  const completedCount = resolvedCount; // show resolved complaints in completed view
+  const reworkCount = complaints.filter((c) => Boolean(c.reworkReason) && c.status === 'in_progress').length;
+
+  const filteredComplaints = complaints.filter((c) => {
+    if (filter === 'all') return true;
+    if (filter === 'pending') return isJobPendingStart(c);
+    if (filter === 'in_progress') return isJobInProgress(c);
+    if (filter === 'active') return isJobActive(c);
+    if (filter === 'urgent') return isJobUrgent(c);
+    if (filter === 'awaiting_verification') return isJobAwaitingVerification(c);
+    if (filter === 'completed') {
+      if (!isJobResolved(c)) return false;
+      if (historyMonth) {
+        const resolvedAt = c.resolvedAt;
+        if (!resolvedAt) return false;
+        const month = new Date(resolvedAt).toISOString().slice(0, 7); // YYYY-MM
+        return month === historyMonth;
+      }
+      return true;
+    }
+    if (filter === 'rework') return Boolean(c.reworkReason) && c.status === 'in_progress';
+    return true;
+  });
 
   return (
     <div className="supervisor-dashboard-page">

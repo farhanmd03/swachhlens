@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import StatusBadge from './StatusBadge.jsx';
 import PriorityBadge from './PriorityBadge.jsx';
 import { WASTE_TYPE_LABELS, VOLUME_LABELS } from '../config/constants.js';
+import { CANONICAL_TEAM_NAMES } from '../services/teamService.js';
 import {
   AlertTriangle,
   Link2,
@@ -144,9 +145,9 @@ export default function ComplaintTable({ complaints, sortField, sortDir, onSort,
                     <div className="table-waste-info">
                       <strong>{WASTE_TYPE_LABELS[complaint.aiResult?.wasteType] || '—'}</strong>
                       {complaint.assignedTeam && (
-                        <span className="table-team-pill">
+                        <span className="table-team-pill" title={`Unit ID: ${complaint.assignedTeam}`}>
                           <Users size={10} />
-                          <span>{complaint.assignedTeam}</span>
+                          <span>{CANONICAL_TEAM_NAMES[complaint.assignedTeam] || complaint.assignedTeam}</span>
                         </span>
                       )}
                     </div>

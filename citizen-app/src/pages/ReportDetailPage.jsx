@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { subscribeToComplaint } from '../services/complaintService.js';
+import { getTeamName } from '../services/teamService.js';
 import StatusBadge from '../components/StatusBadge.jsx';
 import PriorityBadge from '../components/PriorityBadge.jsx';
 import PriorityExplainer from '../components/PriorityExplainer.jsx';
@@ -45,6 +46,13 @@ export default function ReportDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [resolvedTeamName, setResolvedTeamName] = useState('Assigned Response Team');
+
+  useEffect(() => {
+    if (complaint?.assignedTeam) {
+      getTeamName(complaint.assignedTeam).then(setResolvedTeamName);
+    }
+  }, [complaint?.assignedTeam]);
 
   useEffect(() => {
     const unsub = subscribeToComplaint(
@@ -335,7 +343,7 @@ export default function ReportDetailPage() {
           <div className="assignment-item">
             <span className="assign-lbl">Assigned Team</span>
             <span className="assign-val">
-              {assignedTeam ? `Team: ${assignedTeam}` : 'Pending assignment'}
+              {assignedTeam ? resolvedTeamName : 'Pending assignment'}
             </span>
           </div>
           <div className="assignment-item">

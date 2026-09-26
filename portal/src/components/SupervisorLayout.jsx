@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { signOut } from '../services/authService.js';
-import { getActiveTeams } from '../services/teamService.js';
+import { getActiveTeams, CANONICAL_TEAM_NAMES } from '../services/teamService.js';
 import { getTeamWithZone } from '../services/dispatchRecommendationService.js';
 import AppLogoIcon from './AppLogoIcon.jsx';
 import {
@@ -42,7 +42,7 @@ export default function SupervisorLayout({ user }) {
     await signOut();
   };
 
-  const teamName = teamData?.name || user?.teamId || 'Response Unit';
+  const teamName = teamData?.name || CANONICAL_TEAM_NAMES[user?.teamId] || 'Response Unit';
   const teamZone = teamData?.zoneShort || teamData?.primaryZone || 'Operational Zone';
   const crewMembers = teamData?.memberCount || 4;
 
@@ -71,6 +71,11 @@ export default function SupervisorLayout({ user }) {
           <strong className="sup-team-title">{teamName}</strong>
           <div className="sup-team-meta">
             <span><Users size={12} /> {crewMembers} Crew Members</span>
+            {user?.teamId && (
+              <span className="sup-unit-id" style={{ fontSize: '0.75rem', opacity: 0.8 }} title="Technical Unit ID">
+                Unit: {user.teamId}
+              </span>
+            )}
           </div>
         </div>
 
