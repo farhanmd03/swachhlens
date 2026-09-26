@@ -24,6 +24,7 @@ export default function DashboardPage() {
   const [sortField, setSortField] = useState('priorityScore');
   const [sortDir, setSortDir] = useState('desc');
   const [selectedComplaint, setSelectedComplaint] = useState(null);
+  const [selectedHotspot, setSelectedHotspot] = useState(null);
 
   // Handle cross-route section scrolling (e.g. /?section=map or /?section=queue)
   useEffect(() => {
@@ -63,6 +64,7 @@ export default function DashboardPage() {
 
   // Handle one-click alert filter application
   const handleApplyFilter = (newFilters) => {
+    setSelectedHotspot(null);
     setFilters((prev) => ({ ...prev, ...newFilters }));
     const queueEl = document.getElementById('queue');
     if (queueEl) {
@@ -72,13 +74,11 @@ export default function DashboardPage() {
 
   // Handle one-click hotspot filter
   const handleSelectHotspot = (hs) => {
-    setFilters({
-      status: 'all',
-      wasteType: 'all',
-      urgentOnly: false,
-      duplicateOnly: false,
-      search: hs.areaName.split('/')[0].trim(),
-    });
+    setSelectedHotspot(hs);
+    setFilters((prev) => ({
+      ...prev,
+      search: '',
+    }));
     const queueEl = document.getElementById('queue');
     if (queueEl) {
       queueEl.scrollIntoView({ behavior: 'smooth' });
@@ -88,6 +88,11 @@ export default function DashboardPage() {
   // Filter and sort complaints
   const filteredComplaints = useMemo(() => {
     let result = [...complaints];
+
+    // Filter by selected geographic hotspot cluster if active
+    if (selectedHotspot && Array.isArray(selectedHotspot.complaintIds)) {
+      result = result.filter((c) => selectedHotspot.complaintIds.includes(c.id));
+    }
 
     if (filters.status !== 'all') {
       result = result.filter((c) => c.status === filters.status);
@@ -144,7 +149,7 @@ export default function DashboardPage() {
     });
 
     return result;
-  }, [complaints, filters, sortField, sortDir]);
+  }, [complaints, filters, sortField, sortDir, selectedHotspot]);
 
   const handleSort = (field, dir) => {
     setSortField(field);
@@ -203,6 +208,49 @@ export default function DashboardPage() {
             </p>
           </div>
         </div>
+
+        {selectedHotspot && (
+          <div className="hotspot-filter-banner" style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: '#fffbeb',
+            border: '1px solid #fde68a',
+            borderRadius: '8px',
+            padding: '10px 14px',
+            marginBottom: '12px',
+            fontSize: '0.88rem',
+            color: '#92400e',
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ fontSize: '1.1rem' }}>🔥</span>
+              <span>
+                Active Hotspot Filter: <strong>{selectedHotspot.areaName}</strong> ({selectedHotspot.complaintIds?.length || 0} incidents in cluster)
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedHotspot(null)}
+              style={{
+                background: '#fef3c7',
+                border: '1px solid #fcd34d',
+                color: '#b45309',
+                fontWeight: 600,
+                fontSize: '0.8rem',
+                cursor: 'pointer',
+                padding: '4px 10px',
+                borderRadius: '6px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+              }}
+              title="Clear hotspot filter"
+            >
+              <span>Clear Filter</span>
+              <span>✕</span>
+            </button>
+          </div>
+        )}
 
         <FilterBar filters={filters} onFilterChange={setFilters} />
 

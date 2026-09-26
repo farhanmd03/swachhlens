@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   getComplaintById,
+  subscribeToComplaint,
   verifyAndResolveComplaint,
   requestJobRework,
 } from '../services/complaintService.js';
@@ -71,20 +72,35 @@ export default function ComplaintDetailPage() {
     }
   }, [complaint?.assignedTeam]);
 
-  const loadComplaint = async () => {
-    try {
-      const data = await getComplaintById(id);
-      if (!data) setError('Complaint record not found in Firestore.');
-      else setComplaint(data);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadComplaint();
+    if (!id) {
+      setError('No complaint ID provided.');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    const unsubscribe = subscribeToComplaint(
+      id,
+      (data) => {
+        if (!data) {
+          setError('Complaint record not found in Firestore.');
+          setComplaint(null);
+        } else {
+          setComplaint(data);
+          setError(null);
+        }
+        setLoading(false);
+      },
+      (err) => {
+        setError(`Failed to subscribe to complaint updates: ${err.message}`);
+        setLoading(false);
+      }
+    );
+
+    return () => unsubscribe();
   }, [id]);
 
   const handleVerifyAndResolve = async () => {
@@ -93,7 +109,6 @@ export default function ComplaintDetailPage() {
       setError(null);
       await verifyAndResolveComplaint(id, 'municipal-operator', 'Municipal Operations Office');
       setSuccessMsg('Complaint completion verified and marked Resolved!');
-      await loadComplaint();
       setTimeout(() => setSuccessMsg(null), 3500);
     } catch (err) {
       setError(`Verification failed: ${err.message}`);
@@ -115,7 +130,6 @@ export default function ComplaintDetailPage() {
       await requestJobRework(id, reworkReasonInput.trim(), 'municipal-operator');
       setShowReworkModal(false);
       setSuccessMsg('Job returned to field response team for rework.');
-      await loadComplaint();
       setTimeout(() => setSuccessMsg(null), 3500);
     } catch (err) {
       setError(`Rework request failed: ${err.message}`);
