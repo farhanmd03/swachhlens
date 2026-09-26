@@ -14,6 +14,9 @@ import {
   AlertTriangle,
   ArrowRight,
   Inbox,
+  Building2,
+  Calendar,
+  Sparkles,
 } from 'lucide-react';
 import AppLogoIcon from '../components/AppLogoIcon.jsx';
 
@@ -65,19 +68,61 @@ export default function HomePage() {
         <div className="hero-content">
           <div className="hero-badge">
             <AppLogoIcon size={13} className="hero-sparkle" />
-            <span>AI-Powered Civic Response</span>
+            <span>AI-Assisted Municipal & Commercial Operations</span>
           </div>
           <h1 className="hero-title">Hello, {greetingName}</h1>
           <p className="hero-subtitle">
-            See waste. Report it. Route the response.
+            What do you need today?
           </p>
-          <button
-            className="btn btn-primary btn-hero-cta"
-            onClick={() => navigate('/report')}
-          >
-            <PlusCircle size={18} />
-            <span>+ Report Waste</span>
-          </button>
+
+          {/* Dual Action Entry Hub */}
+          <div className="home-action-cards">
+            <div
+              className="action-entry-card civic-entry-card"
+              onClick={() => navigate('/report')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && navigate('/report')}
+            >
+              <div className="entry-card-header">
+                <div className="entry-icon-box civic-icon-box">
+                  <PlusCircle size={20} />
+                </div>
+                <span className="entry-pill civic-pill">Civic Incident</span>
+              </div>
+              <h3 className="entry-title">Report Waste Issue</h3>
+              <p className="entry-desc">
+                Photograph spot waste, illegal dumps, or overflow bins for prioritized municipal field routing.
+              </p>
+              <span className="entry-cta text-blue">
+                <span>Start Report</span>
+                <ArrowRight size={14} />
+              </span>
+            </div>
+
+            <div
+              className="action-entry-card commercial-entry-card"
+              onClick={() => navigate('/bulk-service')}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => e.key === 'Enter' && navigate('/bulk-service')}
+            >
+              <div className="entry-card-header">
+                <div className="entry-icon-box commercial-icon-box">
+                  <Building2 size={20} />
+                </div>
+                <span className="entry-pill commercial-pill">SwachhLens Services</span>
+              </div>
+              <h3 className="entry-title">Book Bulk & Event Waste</h3>
+              <p className="entry-desc">
+                Plan dedicated crew, vehicle dispatch & recycling recovery for weddings, festivals & venues.
+              </p>
+              <span className="entry-cta text-purple">
+                <span>Plan Event Cleanup</span>
+                <ArrowRight size={14} />
+              </span>
+            </div>
+          </div>
         </div>
       </section>
 

@@ -6,6 +6,7 @@ import { getAuthMode } from './services/authService.js';
 import Layout from './components/Layout.jsx';
 import HomePage from './pages/HomePage.jsx';
 import ReportPage from './pages/ReportPage.jsx';
+import BulkEventServicePage from './pages/BulkEventServicePage.jsx';
 import MyReportsPage from './pages/MyReportsPage.jsx';
 import ReportDetailPage from './pages/ReportDetailPage.jsx';
 import ProfilePage from './pages/ProfilePage.jsx';
@@ -79,6 +80,7 @@ export default function App() {
         <Route path="/" element={<Layout authMode={authMode} />}>
           <Route index element={<HomePage />} />
           <Route path="report" element={<ReportPage />} />
+          <Route path="bulk-service" element={<BulkEventServicePage />} />
           <Route path="my-reports" element={<MyReportsPage />} />
           <Route path="report/:id" element={<ReportDetailPage />} />
           <Route path="profile" element={<ProfilePage authMode={authMode} onNavigateAuth={setAuthScreen} />} />

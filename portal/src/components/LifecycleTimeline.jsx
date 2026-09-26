@@ -72,9 +72,21 @@ export function getStepStatus(stepKey, complaint) {
 export default function LifecycleTimeline({ complaint }) {
   if (!complaint) return null;
 
+  const isCommercial = complaint.serviceType === 'commercial_bulk';
+  const steps = isCommercial
+    ? [
+        { key: 'reported', label: 'Service Requested', tsKey: 'timestamp' },
+        { key: 'verified', label: 'Reviewed & Approved', tsKey: 'verifiedAt' },
+        { key: 'assigned', label: 'Unit Assigned', tsKey: 'assignedAt' },
+        { key: 'arrived', label: 'Arrived On Site', tsKey: 'arrivedAt' },
+        { key: 'in_progress', label: 'Cleanup In Progress', tsKey: 'inProgressAt' },
+        { key: 'resolved', label: 'Verified & Completed', tsKey: 'resolvedAt' },
+      ]
+    : LIFECYCLE_STEPS;
+
   return (
     <div className="lifecycle-timeline">
-      {LIFECYCLE_STEPS.map((step) => {
+      {steps.map((step) => {
         const { isDone, isCurrent, isPending } = getStepStatus(step.key, complaint);
         const ts = complaint[step.tsKey];
 

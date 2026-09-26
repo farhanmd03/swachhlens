@@ -30,6 +30,15 @@ import {
   Fingerprint,
   ShieldCheck,
   Check,
+  Building2,
+  Calendar,
+  Truck,
+  HardHat,
+  Leaf,
+  Sparkles,
+  Info,
+  MapPin,
+  FileCheck,
 } from 'lucide-react';
 
 function confidenceLabel(confidence) {
@@ -103,7 +112,13 @@ export default function ReportDetailPage() {
     timestamp,
     feedback,
     completionEvidence,
+    serviceType,
+    businessDetails,
+    commercialAssessment,
+    commercialQuote,
   } = complaint;
+
+  const isCommercial = serviceType === 'commercial_bulk';
 
   const date = new Date(timestamp).toLocaleString('en-IN', {
     day: 'numeric',
@@ -114,9 +129,346 @@ export default function ReportDetailPage() {
   });
   const isResolved = status === 'resolved';
   const hasFeedback = !!feedback;
-  const wasteLabel =
-    WASTE_TYPE_LABELS[aiResult?.wasteType] || aiResult?.wasteType || 'Waste Issue';
+  const wasteLabel = isCommercial
+    ? (businessDetails?.establishmentLabel || comment || 'Bulk & Event Waste Service')
+    : (WASTE_TYPE_LABELS[aiResult?.wasteType] || aiResult?.wasteType || 'Waste Issue');
 
+  // ── COMMERCIAL DOSSIER VIEW ──────────────────────────────────────────
+  if (isCommercial) {
+    const bDetails = businessDetails || {};
+    const cAssessment = commercialAssessment || {};
+    const cQuote = commercialQuote || {};
+
+    return (
+      <div className="report-detail-page commercial-detail-page">
+        <div className="detail-top-nav">
+          <button className="btn btn-secondary back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={16} />
+            <span>Back</span>
+          </button>
+          {complaintNumber && (
+            <span className="top-tracking-id commercial-tracking-id">{complaintNumber}</span>
+          )}
+        </div>
+
+        {/* Commercial Header Card */}
+        <div className="detail-header-card commercial-header-card">
+          <div className="header-meta-row">
+            <div>
+              <div className="commercial-card-tag">
+                <Building2 size={13} />
+                <span>SwachhLens Services: Bulk Waste</span>
+              </div>
+              <h2>{wasteLabel}</h2>
+            </div>
+            <div className="detail-badges-row">
+              <StatusBadge status={status} />
+            </div>
+          </div>
+
+          <div className="commercial-event-strip">
+            <div className="event-strip-item">
+              <Calendar size={13} />
+              <span>Event Date: <strong>{bDetails.eventDate || 'Scheduled'}</strong></span>
+            </div>
+            <div className="event-strip-item">
+              <Clock size={13} />
+              <span>Window: <strong>{bDetails.serviceWindowLabel || bDetails.serviceWindow || 'Standard'}</strong></span>
+            </div>
+          </div>
+        </div>
+
+        {/* Live Cleanup Timeline */}
+        <div className="detail-section-card">
+          <h3 className="section-card-title">
+            <Clock size={16} />
+            <span>Operational Service Lifecycle</span>
+          </h3>
+          <LifecycleTimeline complaint={complaint} />
+        </div>
+
+        {/* Event Logistics & Venue Card */}
+        <div className="detail-section-card">
+          <h3 className="section-card-title">
+            <Building2 size={16} />
+            <span>Event Logistics & Scope</span>
+          </h3>
+          <div className="evidence-meta-grid">
+            <div className="meta-cell full-width">
+              <span className="meta-label">Venue / Service Address</span>
+              <span className="meta-value bold">{bDetails.address || 'Venue Location'}</span>
+            </div>
+            <div className="meta-cell">
+              <span className="meta-label">Expected Attendance</span>
+              <span className="meta-value">{bDetails.estimatedPeople ? `${bDetails.estimatedPeople} attendees` : '—'}</span>
+            </div>
+            <div className="meta-cell">
+              <span className="meta-label">Estimated Waste Scale</span>
+              <span className="meta-value">{bDetails.scaleLabel || 'Medium Scale'}</span>
+            </div>
+            <div className="meta-cell full-width">
+              <span className="meta-label">Expected Material Streams</span>
+              <div className="recoverable-streams-tags" style={{ marginTop: '4px' }}>
+                {bDetails.wasteTypeLabels?.map((label, idx) => (
+                  <span key={idx} className="stream-tag">📦 {label}</span>
+                )) || <span className="meta-value">General Event Waste</span>}
+              </div>
+            </div>
+            {bDetails.specialInstructions && (
+              <div className="meta-cell full-width">
+                <span className="meta-label">Special Instructions</span>
+                <span className="meta-value comment-text">"{bDetails.specialInstructions}"</span>
+              </div>
+            )}
+          </div>
+
+          {imageBase64 && (
+            <div style={{ marginTop: '12px' }}>
+              <span className="meta-label" style={{ display: 'block', marginBottom: '6px' }}>Site Visual Reference:</span>
+              <div className="detail-image-wrapper">
+                <img
+                  src={`data:image/jpeg;base64,${imageBase64}`}
+                  alt="Site visual"
+                  className="detail-main-image"
+                />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* AI-Assisted Service Plan */}
+        {cAssessment && (
+          <div className="detail-section-card">
+            <div className="section-card-header-row">
+              <h3 className="section-card-title">
+                <Sparkles size={16} className="text-sparkle" />
+                <span>AI-Assisted Service Plan</span>
+              </h3>
+              <span className="confidence-pill">{Math.round((cAssessment.confidence || 0.9) * 100)}% Confidence</span>
+            </div>
+
+            <div className="detail-grid-metrics">
+              <div className="metric-box">
+                <span className="metric-lbl">Recommended Crew</span>
+                <strong className="metric-val highlight-blue">
+                  <HardHat size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                  {cAssessment.estimatedCrew} Members
+                </strong>
+                {cAssessment.crewReasons?.length > 0 && (
+                  <ul className="spec-reason-list" style={{ marginTop: '6px' }}>
+                    {cAssessment.crewReasons.map((r, idx) => (
+                      <li key={idx} style={{ fontSize: '0.75rem' }}>• {r}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="metric-box">
+                <span className="metric-lbl">Allocated Fleet Unit</span>
+                <strong className="metric-val highlight-blue">
+                  <Truck size={14} style={{ display: 'inline', marginRight: '4px' }} />
+                  {cAssessment.recommendedVehicle}
+                </strong>
+                {cAssessment.vehicleReasons?.length > 0 && (
+                  <ul className="spec-reason-list" style={{ marginTop: '6px' }}>
+                    {cAssessment.vehicleReasons.map((r, idx) => (
+                      <li key={idx} style={{ fontSize: '0.75rem' }}>• {r}</li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div className="metric-box">
+                <span className="metric-lbl">Est. Duration</span>
+                <strong className="metric-val">~{cAssessment.estimatedDuration || '4 hours'}</strong>
+              </div>
+              <div className="metric-box">
+                <span className="metric-lbl">Recovery Viability</span>
+                <strong className="metric-val text-green">{cAssessment.recoveryOpportunity || 'Moderate'}</strong>
+              </div>
+            </div>
+
+            {cAssessment.recoverableStreams?.length > 0 && (
+              <div className="recovery-spotlight-box" style={{ marginTop: '12px' }}>
+                <div className="recovery-header">
+                  <Leaf size={15} className="text-green" />
+                  <strong>Material Recovery: {cAssessment.recoveryOpportunity}</strong>
+                </div>
+                <div className="recoverable-streams-tags">
+                  {cAssessment.recoverableStreams.map((st, i) => (
+                    <span key={i} className="stream-tag">♻️ {st}</span>
+                  ))}
+                </div>
+                <p className="recovery-notes">{cAssessment.recoveryNotes}</p>
+                <span className="recovery-pathway">Suggested Pathway: {cAssessment.recoveryPathway}</span>
+              </div>
+            )}
+
+            <div className="plan-disclaimer" style={{ marginTop: '10px' }}>
+              <Info size={13} />
+              <span>{cAssessment.disclaimer || 'AI-assisted estimate — operator review and site validation required.'}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Commercial Quotation Card */}
+        {cQuote && (
+          <div className="detail-section-card">
+            <div className="section-card-header-row">
+              <h3 className="section-card-title">
+                <FileCheck size={16} />
+                <span>Indicative Service Estimate</span>
+              </h3>
+              <span className="rate-version-tag">Rate Card {cQuote.rateCardVersion || 'v1.0'}</span>
+            </div>
+
+            <div className="quote-line-items">
+              {cQuote.lineItems?.map((item, idx) => (
+                <div key={idx} className="quote-line-item">
+                  <div className="line-item-desc">
+                    <span className="line-item-label">{item.label}</span>
+                    <span className="line-item-detail">{item.detail}</span>
+                  </div>
+                  <span className="line-item-amount">₹{item.amount.toLocaleString('en-IN')}</span>
+                </div>
+              ))}
+
+              <div className="quote-total-row">
+                <div>
+                  <strong className="total-label">Indicative Total</strong>
+                  <span className="total-sub">Includes mobilization, labor & fleet logistics</span>
+                </div>
+                <strong className="total-amount">₹{cQuote.indicativeTotal?.toLocaleString('en-IN')}</strong>
+              </div>
+            </div>
+
+            <div className="quote-footer-notice" style={{ marginTop: '10px' }}>
+              <ShieldCheck size={13} />
+              <span>{cQuote.disclaimer || 'Indicative pricing / subject to municipal operator review'}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Municipal Response Unit */}
+        <div className="detail-section-card">
+          <h3 className="section-card-title">
+            <Users size={16} />
+            <span>Dedicated Operations Unit</span>
+          </h3>
+          <div className="assignment-grid">
+            <div className="assignment-item">
+              <span className="assign-lbl">Assigned Field Unit</span>
+              <span className="assign-val">
+                {assignedTeam ? resolvedTeamName : 'Pending municipal dispatch'}
+              </span>
+            </div>
+            <div className="assignment-item">
+              <span className="assign-lbl">Fleet Vehicle</span>
+              <span className="assign-val">{assignedVehicle || cAssessment?.recommendedVehicle || 'Mini Truck'}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Field Cleanup Evidence (Before & After) */}
+        {completionEvidence && (
+          <div className="detail-section-card cleanup-verification-card">
+            <div className="section-card-header-row">
+              <h3 className="section-card-title">
+                <ShieldCheck size={16} className="text-emerald" />
+                <span>Field Service Verification</span>
+              </h3>
+              <span className="verification-pill-citizen">
+                <Check size={12} /> Verified by Municipal Operations
+              </span>
+            </div>
+
+            <div className="citizen-before-after-grid">
+              <div className="citizen-comparison-col">
+                <span className="comparison-badge before-badge">BEFORE CLEANUP</span>
+                {imageBase64 ? (
+                  <img src={`data:image/jpeg;base64,${imageBase64}`} alt="Before Cleanup" className="comparison-citizen-img" />
+                ) : (
+                  <div className="comparison-placeholder">Initial Venue Photo</div>
+                )}
+              </div>
+              <div className="citizen-comparison-col">
+                <span className="comparison-badge after-badge">AFTER SERVICE</span>
+                {completionEvidence.afterImageBase64 ? (
+                  <img src={`data:image/jpeg;base64,${completionEvidence.afterImageBase64}`} alt="After Cleanup" className="comparison-citizen-img" />
+                ) : (
+                  <div className="comparison-placeholder">Verified by Field Supervisor</div>
+                )}
+              </div>
+            </div>
+
+            {completionEvidence.completionNote && (
+              <div className="citizen-completion-note-box">
+                <span className="comp-note-label">Supervisor Field Note:</span>
+                <p className="comp-note-text">"{completionEvidence.completionNote}"</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Customer Service Rating & Feedback */}
+        {isResolved && !hasFeedback && !feedbackSubmitted && (
+          <div className="detail-section-card feedback-prompt-card">
+            <h3 className="section-card-title">
+              <Star size={16} />
+              <span>Rate Commercial Service Experience</span>
+            </h3>
+            <p className="feedback-prompt-text">
+              Municipal operations have verified and closed this service request. Please rate the crew & collection quality.
+            </p>
+            <ResolutionFeedback
+              complaintId={id}
+              onSubmitted={() => setFeedbackSubmitted(true)}
+            />
+          </div>
+        )}
+
+        {feedbackSubmitted && (
+          <div className="detail-section-card feedback-thanks-card">
+            <CheckCircle2 size={36} className="text-emerald" style={{ marginBottom: '6px' }} />
+            <h4>Thank you for your feedback!</h4>
+            <p>Your review helps maintain quality standards for commercial operations.</p>
+          </div>
+        )}
+
+        {hasFeedback && (
+          <div className="detail-section-card verified-feedback-card">
+            <h3 className="section-card-title">
+              <Star size={16} />
+              <span>Customer Service Rating</span>
+            </h3>
+            <div className="submitted-feedback-body">
+              <div className="feedback-result-line">
+                <span className="fdbk-label">Service Quality:</span>
+                <strong className="fdbk-value">{feedback.result?.replace(/_/g, ' ')}</strong>
+              </div>
+              <div className="feedback-rating-line">
+                <span className="fdbk-label">Rating:</span>
+                <span className="fdbk-stars">
+                  {'★'.repeat(feedback.rating)}
+                  {'☆'.repeat(5 - feedback.rating)}
+                </span>
+                <span className="fdbk-score-num">({feedback.rating}/5)</span>
+              </div>
+              {feedback.comment && (
+                <div className="feedback-comment-line">
+                  <span className="fdbk-label">Comment:</span>
+                  <p className="fdbk-comment-text">"{feedback.comment}"</p>
+                </div>
+              )}
+              <p className="feedback-timestamp">
+                Submitted on {new Date(feedback.submittedAt).toLocaleString('en-IN')}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── CIVIC REPORT VIEW (UNTOUCHED) ──────────────────────────────────
   return (
     <div className="report-detail-page">
       <div className="detail-top-nav">

@@ -25,8 +25,11 @@ export default function ComplaintCard({ complaint }) {
     urgentEscalation,
   } = complaint;
 
-  const wasteLabel =
-    WASTE_TYPE_LABELS[aiResult?.wasteType] || aiResult?.wasteType || 'Waste Issue';
+  const isCommercial = complaint.serviceType === 'commercial_bulk';
+  const wasteLabel = isCommercial
+    ? (complaint.businessDetails?.establishmentLabel || complaint.comment || 'Bulk & Event Waste')
+    : (WASTE_TYPE_LABELS[aiResult?.wasteType] || aiResult?.wasteType || 'Waste Issue');
+
   const date = new Date(timestamp).toLocaleDateString('en-IN', {
     day: 'numeric',
     month: 'short',
@@ -35,7 +38,7 @@ export default function ComplaintCard({ complaint }) {
 
   return (
     <div
-      className="complaint-card"
+      className={`complaint-card ${isCommercial ? 'commercial-item-card' : ''}`}
       onClick={() => navigate(`/report/${id}`)}
       role="button"
       tabIndex={0}
@@ -45,7 +48,9 @@ export default function ComplaintCard({ complaint }) {
         {imageBase64 ? (
           <img src={`data:image/jpeg;base64,${imageBase64}`} alt={wasteLabel} />
         ) : (
-          <div className="placeholder-image">No Image</div>
+          <div className="placeholder-image">
+            {isCommercial ? '🏢 Bulk' : 'No Image'}
+          </div>
         )}
         {urgentEscalation && (
           <span className="card-urgent-badge" title="Urgent Hazard">
@@ -55,14 +60,27 @@ export default function ComplaintCard({ complaint }) {
       </div>
 
       <div className="complaint-card-info">
-        {complaintNumber && (
-          <span className="card-complaint-number">{complaintNumber}</span>
-        )}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+          {complaintNumber && (
+            <span className="card-complaint-number">{complaintNumber}</span>
+          )}
+          {isCommercial && (
+            <span className="card-commercial-badge">
+              🏢 Bulk Service
+            </span>
+          )}
+        </div>
+
         <h3 className="card-waste-title">{wasteLabel}</h3>
 
         <div className="card-date-line">
           <Calendar size={12} className="card-cal-icon" />
-          <span>{date}</span>
+          <span>{isCommercial && complaint.businessDetails?.eventDate ? `Event: ${complaint.businessDetails.eventDate}` : date}</span>
+          {isCommercial && complaint.commercialQuote?.indicativeTotal && (
+            <span style={{ marginLeft: 'auto', fontWeight: 700, color: 'var(--primary)' }}>
+              ₹{complaint.commercialQuote.indicativeTotal.toLocaleString('en-IN')}
+            </span>
+          )}
         </div>
 
         <div className="complaint-card-badges">

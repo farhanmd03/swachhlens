@@ -159,6 +159,7 @@ export async function updateComplaint(complaintId, updates) {
     status: newStatus,
     assignedTeam: updates.assignedTeam !== undefined ? updates.assignedTeam : (data.assignedTeam ?? null),
     assignedVehicle: updates.assignedVehicle !== undefined ? updates.assignedVehicle : (data.assignedVehicle ?? null),
+    dispatchDecisionType: updates.dispatchDecisionType !== undefined ? updates.dispatchDecisionType : (data.dispatchDecisionType ?? null),
 
     // Lifecycle timestamps
     verifiedAt: data.verifiedAt ?? null,
@@ -255,4 +256,46 @@ export async function requestJobRework(complaintId, reworkReason, operatorUid) {
     reworkReason: reworkReason.trim(),
     reworkRequestedAt: now,
   });
+}
+
+/**
+ * Municipal Operator Action: Accept AI Advisory Recommendation for Commercial Bulk Service.
+ */
+export async function acceptCommercialAiDispatch(complaintId, teamId, vehicle) {
+  const now = Date.now();
+  await updateComplaint(complaintId, {
+    status: 'assigned',
+    assignedTeam: teamId,
+    assignedVehicle: vehicle,
+    assignedAt: now,
+    dispatchDecisionType: 'accepted_ai',
+  });
+  if (teamId) {
+    try {
+      await updateTeamLoad(teamId, 1);
+    } catch (e) {
+      console.warn('Failed to increment team load:', e);
+    }
+  }
+}
+
+/**
+ * Municipal Operator Action: Override AI Advisory and manually assign unit for Commercial Bulk Service.
+ */
+export async function overrideCommercialDispatch(complaintId, teamId, vehicle) {
+  const now = Date.now();
+  await updateComplaint(complaintId, {
+    status: 'assigned',
+    assignedTeam: teamId,
+    assignedVehicle: vehicle,
+    assignedAt: now,
+    dispatchDecisionType: 'operator_override',
+  });
+  if (teamId) {
+    try {
+      await updateTeamLoad(teamId, 1);
+    } catch (e) {
+      console.warn('Failed to increment team load:', e);
+    }
+  }
 }

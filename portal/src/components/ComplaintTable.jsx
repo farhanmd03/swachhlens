@@ -3,17 +3,22 @@ import { useNavigate } from 'react-router-dom';
 import StatusBadge from './StatusBadge.jsx';
 import PriorityBadge from './PriorityBadge.jsx';
 import { WASTE_TYPE_LABELS, VOLUME_LABELS } from '../config/constants.js';
+import {
+  ESTABLISHMENT_TYPE_LABELS,
+  COMMERCIAL_SCALE_LABELS,
+  WASTE_STREAM_LABELS,
+} from '../config/commercialConstants.js';
 import { CANONICAL_TEAM_NAMES } from '../services/teamService.js';
 import {
   AlertTriangle,
   Link2,
   Send,
   Eye,
-  Inbox,
   ChevronUp,
   ChevronDown,
   Users,
   ShieldCheck,
+  Building2,
 } from 'lucide-react';
 
 export default function ComplaintTable({ complaints, sortField, sortDir, onSort, onAction }) {
@@ -52,15 +57,15 @@ export default function ComplaintTable({ complaints, sortField, sortDir, onSort,
             <th>Photo</th>
             <th onClick={() => handleSort('wasteType')} className="sortable-th">
               <div className="th-content">
-                <span>Issue Category</span>
+                <span>Issue / Service Category</span>
                 {renderSortIndicator('wasteType')}
               </div>
             </th>
-            <th>Reporter</th>
-            <th>Volume</th>
+            <th>Reporter / Client</th>
+            <th>Scale / Volume</th>
             <th onClick={() => handleSort('priorityScore')} className="sortable-th">
               <div className="th-content">
-                <span>Priority Score</span>
+                <span>Priority / Tariff</span>
                 {renderSortIndicator('priorityScore')}
               </div>
             </th>
@@ -91,36 +96,59 @@ export default function ComplaintTable({ complaints, sortField, sortDir, onSort,
                     alt="All Clear"
                     style={{ width: '80px', height: 'auto', borderRadius: '8px', opacity: 0.9 }}
                   />
-                  <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>No complaints match the selected filter criteria.</span>
+                  <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>No records match the selected filter criteria.</span>
                 </div>
               </td>
             </tr>
           ) : (
             complaints.map((complaint) => {
-              const isUrgent = !!complaint.urgentEscalation;
+              const isCommercial = complaint.serviceType === 'commercial_bulk';
+              const isUrgent = !!complaint.urgentEscalation || complaint.serviceWindow === 'immediate';
               const isAwaitingVerification = complaint.status === 'completed_pending_verification';
+
+              const trackingNumber = isCommercial
+                ? (complaint.serviceNumber || complaint.complaintNumber || complaint.id.slice(0, 8))
+                : (complaint.complaintNumber || complaint.id.slice(0, 8));
+
+              const quoteTariff = complaint.commercialQuote?.totalQuote || complaint.quotedTariff || 0;
 
               return (
                 <tr
                   key={complaint.id}
-                  className={`table-row ${isUrgent ? 'urgent-highlight-row' : ''} ${isAwaitingVerification ? 'awaiting-verification-row' : ''}`}
+                  className={`table-row ${isUrgent ? 'urgent-highlight-row' : ''} ${isAwaitingVerification ? 'awaiting-verification-row' : ''} ${isCommercial ? 'commercial-item-row' : ''}`}
                   onClick={() => navigate(`/complaint/${complaint.id}`)}
                   role="button"
                   tabIndex={0}
                   onKeyDown={(e) => e.key === 'Enter' && navigate(`/complaint/${complaint.id}`)}
-                  title={`Open incident dossier ${complaint.complaintNumber || complaint.id}`}
+                  title={`Open incident dossier ${trackingNumber}`}
                 >
                   <td>
-                    <span
-                      className="table-complaint-id-link"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigate(`/complaint/${complaint.id}`);
-                      }}
-                      title={`Inspect full report ${complaint.id}`}
-                    >
-                      {complaint.complaintNumber || complaint.id.slice(0, 8)}
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                      <span
+                        className="table-complaint-id-link"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/complaint/${complaint.id}`);
+                        }}
+                        title={`Inspect full report ${complaint.id}`}
+                      >
+                        {trackingNumber}
+                      </span>
+                      {isCommercial && (
+                        <span className="table-bulk-badge" style={{
+                          fontSize: '0.68rem',
+                          background: '#ecfdf5',
+                          color: '#065f46',
+                          border: '1px solid #a7f3d0',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          fontWeight: 700,
+                          width: 'fit-content',
+                        }}>
+                          🏢 Bulk Service
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td>
                     {complaint.imageBase64 ? (
@@ -137,13 +165,29 @@ export default function ComplaintTable({ complaints, sortField, sortDir, onSort,
                           className="table-thumbnail-img"
                         />
                       </div>
+                    ) : isCommercial ? (
+                      <div className="table-thumbnail-placeholder" style={{ background: '#f0fdf4', color: '#059669', fontSize: '1rem' }} title="Commercial Service Record">
+                        <Building2 size={16} />
+                      </div>
                     ) : (
                       <div className="table-thumbnail-placeholder">—</div>
                     )}
                   </td>
                   <td>
                     <div className="table-waste-info">
-                      <strong>{WASTE_TYPE_LABELS[complaint.aiResult?.wasteType] || '—'}</strong>
+                      {isCommercial ? (
+                        <>
+                          <strong>{ESTABLISHMENT_TYPE_LABELS[complaint.establishmentType] || complaint.eventName || 'Commercial Bulk'}</strong>
+                          {complaint.eventName && (
+                            <span style={{ fontSize: '0.75rem', color: '#64748b', display: 'block' }}>
+                              {complaint.eventName}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <strong>{WASTE_TYPE_LABELS[complaint.aiResult?.wasteType] || '—'}</strong>
+                      )}
+
                       {complaint.assignedTeam && (
                         <span className="table-team-pill" title={`Unit ID: ${complaint.assignedTeam}`}>
                           <Users size={10} />
@@ -153,24 +197,54 @@ export default function ComplaintTable({ complaints, sortField, sortDir, onSort,
                     </div>
                   </td>
                   <td>
-                    <span className="table-reporter-name">
-                      {complaint.citizenName || <span className="text-muted">Anonymous</span>}
-                    </span>
+                    {isCommercial ? (
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span className="table-reporter-name">
+                          {complaint.customerContact?.contactPerson || complaint.citizenName || 'Client'}
+                        </span>
+                        {complaint.customerContact?.organizationName && (
+                          <span style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                            {complaint.customerContact.organizationName}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="table-reporter-name">
+                        {complaint.citizenName || <span className="text-muted">Anonymous</span>}
+                      </span>
+                    )}
                   </td>
                   <td>
-                    <span className="table-vol-tag">
-                      {VOLUME_LABELS[complaint.aiResult?.volumeEstimate] || '—'}
-                    </span>
+                    {isCommercial ? (
+                      <span className="table-vol-tag" style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0' }}>
+                        {COMMERCIAL_SCALE_LABELS[complaint.scale]?.split(' ')[0] || 'Bulk'}
+                      </span>
+                    ) : (
+                      <span className="table-vol-tag">
+                        {VOLUME_LABELS[complaint.aiResult?.volumeEstimate] || '—'}
+                      </span>
+                    )}
                   </td>
                   <td>
-                    <PriorityBadge score={complaint.priorityScore} />
+                    {isCommercial && quoteTariff > 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                        <span style={{ fontWeight: 700, color: '#047857', fontSize: '0.88rem' }}>
+                          ₹{quoteTariff.toLocaleString('en-IN')}
+                        </span>
+                        <span style={{ fontSize: '0.68rem', color: '#64748b' }}>
+                          Score: {complaint.priorityScore}
+                        </span>
+                      </div>
+                    ) : (
+                      <PriorityBadge score={complaint.priorityScore} />
+                    )}
                   </td>
                   <td>
                     <StatusBadge status={complaint.status} />
                   </td>
                   <td className="text-center">
                     {isUrgent ? (
-                      <span className="badge-urgent-symbol" title="Urgent Hazard Escalation">
+                      <span className="badge-urgent-symbol" title="Urgent Hazard Escalation or Immediate Service Window">
                         <AlertTriangle size={15} className="text-red" />
                       </span>
                     ) : (
@@ -207,13 +281,13 @@ export default function ComplaintTable({ complaints, sortField, sortDir, onSort,
                           title="Open Dispatch & Team Assignment"
                         >
                           <Send size={12} />
-                          <span>Dispatch</span>
+                          <span>{isCommercial ? 'Dispatch' : 'Dispatch'}</span>
                         </button>
                       )}
                       <button
                         className="btn btn-small btn-secondary"
                         onClick={() => navigate(`/complaint/${complaint.id}`)}
-                        title="View Full Incident Details"
+                        title="View Full Dossier"
                       >
                         <Eye size={12} />
                         <span>View</span>

@@ -66,9 +66,9 @@ service cloud.firestore {
       // Demo seed script can also create demo complaints.
       allow create: if request.auth != null
         && (
-          (request.resource.data.citizenId == request.auth.uid && request.resource.data.status == 'reported')
+          (request.resource.data.citizenId == request.auth.uid && request.resource.data.status in ['reported', 'requested', 'approved'])
           || (request.resource.data.citizenId.matches('demo-citizen-.*')
-              && request.resource.data.status in ['reported', 'verified', 'assigned', 'in_progress', 'resolved'])
+              && request.resource.data.status in ['reported', 'verified', 'assigned', 'in_progress', 'completed_pending_verification', 'resolved', 'requested', 'approved'])
         )
         // Required fields
         && request.resource.data.citizenId is string
@@ -108,9 +108,17 @@ service cloud.firestore {
           && request.resource.data.urgentEscalation == resource.data.urgentEscalation
           && request.resource.data.isDuplicateOf == resource.data.isDuplicateOf
           // Status must be a valid value
-          && request.resource.data.status in ['reported', 'verified', 'assigned', 'in_progress', 'completed_pending_verification', 'resolved']
+          && request.resource.data.status in ['reported', 'verified', 'assigned', 'in_progress', 'completed_pending_verification', 'resolved', 'requested', 'approved']
         )
       );
+
+      // Commercial customers can approve their own commercial quote
+      allow update: if request.auth != null
+        && request.auth.uid == resource.data.citizenId
+        && resource.data.serviceType == 'commercial_bulk'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['customerApproval', 'status'])
+        && request.resource.data.customerApproval is map
+        && request.resource.data.status in ['requested', 'approved'];
 
       // Citizens can submit feedback on their own resolved complaints.
       // ONLY the 'feedback' field may be modified — all other fields

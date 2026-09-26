@@ -60,8 +60,12 @@ export const STATUSES = [
 
 export const STATUS_LABELS = {
   reported: 'Reported',
+  requested: 'Service Requested',
+  quoted: 'Quote Generated',
+  approved: 'Service Approved',
   verified: 'Verified',
   assigned: 'Assigned',
+  arrived: 'Arrived On Site',
   in_progress: 'In Progress',
   completed_pending_verification: 'Completed (Awaiting Verification)',
   resolved: 'Resolved',
@@ -69,11 +73,15 @@ export const STATUS_LABELS = {
 
 export const STATUS_COLORS = {
   reported: '#ff9800',
+  requested: '#3b82f6',
+  quoted: '#8b5cf6',
+  approved: '#10b981',
   verified: '#2196f3',
   assigned: '#9c27b0',
-  in_progress: '#00bcd4',
+  arrived: '#06b6d4',
+  in_progress: '#0284c7',
   completed_pending_verification: '#8b5cf6',
-  resolved: '#4caf50',
+  resolved: '#10b981',
 };
 
 // ── Priority Thresholds ─────────────────────────────────────────

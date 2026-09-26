@@ -29,7 +29,22 @@ import {
  * 3. Final Municipal Decision (manual assignment & override)
  */
 export default function DispatchModal({ complaint, onClose }) {
-  const rec = complaint?.recommendedIntervention;
+  const rec =
+    complaint?.recommendedIntervention ||
+    (complaint?.commercialAssessment
+      ? {
+          recommendedAction:
+            complaint.commercialAssessment.summaryPlan || 'Bulk Event Waste Response & Collection',
+          teamType: complaint.commercialAssessment.recommendedTeamType || 'mini_truck',
+          vehicle: complaint.commercialAssessment.recommendedVehicle || 'Mini Truck',
+          workerCount: complaint.commercialAssessment.recommendedCrewSize || 4,
+          estimatedCleanupTime: `${complaint.commercialAssessment.estimatedDurationHours || 4} hours`,
+          reasoning:
+            complaint.commercialAssessment.crewReasoning ||
+            'Assessed based on commercial scale, waste stream segregation, and turn-around requirement.',
+          urgent: complaint.serviceWindow === 'immediate',
+        }
+      : null);
 
   const [mode, setMode] = useState('recommendation'); // 'recommendation' | 'dispatch'
   const [teams, setTeams] = useState([]);
@@ -64,7 +79,7 @@ export default function DispatchModal({ complaint, onClose }) {
     }
 
     setAssignedVehicle(rec?.vehicle || '');
-    if (status === 'reported' || status === 'verified') {
+    if (['reported', 'verified', 'requested', 'approved', 'quoted'].includes(status)) {
       setStatus('assigned');
     }
     setMode('dispatch');
@@ -81,10 +96,10 @@ export default function DispatchModal({ complaint, onClose }) {
 
       // Enforce status consistency:
       // When a municipal operator confirms a NEW team assignment (previous was unassigned),
-      // and status is 'reported' or 'verified', it MUST transition to 'assigned'.
+      // and status is 'reported', 'verified', 'requested', or 'approved', it MUST transition to 'assigned'.
       let finalStatus = status;
       const isNewlyAssigned = Boolean(assignedTeam) && !complaint.assignedTeam;
-      if (isNewlyAssigned && (finalStatus === 'reported' || finalStatus === 'verified')) {
+      if (isNewlyAssigned && ['reported', 'verified', 'requested', 'approved', 'quoted'].includes(finalStatus)) {
         finalStatus = 'assigned';
       }
 
@@ -92,6 +107,7 @@ export default function DispatchModal({ complaint, onClose }) {
         status: finalStatus,
         assignedTeam: assignedTeam || null,
         assignedVehicle: assignedVehicle || null,
+        dispatchDecisionType: mode === 'dispatch' && !smartDispatch.recommendedTeamId ? 'operator_override' : 'operator_override',
       });
 
       // Update team load if team changed

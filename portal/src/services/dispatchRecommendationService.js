@@ -130,7 +130,9 @@ export function recommendDispatch({ complaint, teams }) {
   }
 
   // 1. Determine Required Team Capability
-  let requiredType = complaint.recommendedIntervention?.teamType;
+  let requiredType =
+    complaint.recommendedIntervention?.teamType ||
+    complaint.commercialAssessment?.recommendedTeamType;
   if (!requiredType) {
     const wt = complaint.aiResult?.wasteType;
     const vol = complaint.aiResult?.volumeEstimate;

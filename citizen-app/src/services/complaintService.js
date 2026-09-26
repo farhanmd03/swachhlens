@@ -102,3 +102,20 @@ export async function submitFeedback(complaintId, feedbackData) {
     },
   });
 }
+
+/**
+ * Approve an indicative commercial service quote (customer action).
+ *
+ * @param {string} complaintId
+ * @returns {Promise<void>}
+ */
+export async function approveCommercialQuote(complaintId) {
+  const docRef = doc(db, 'complaints', complaintId);
+  await updateDoc(docRef, {
+    customerApproval: {
+      status: 'accepted',
+      approvedAt: Date.now(),
+    },
+    status: 'approved',
+  });
+}
