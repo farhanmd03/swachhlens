@@ -164,8 +164,12 @@ export default function HomePage() {
         </div>
 
         {recentComplaints.length === 0 ? (
-          <div className="empty-state-box">
-            <Inbox size={32} className="empty-icon-muted" />
+          <div className="empty-state-box" style={{ textAlign: 'center', padding: '24px 16px' }}>
+            <img
+              src="/assets/branding/citizen-report-waste.png"
+              alt="Report Waste"
+              style={{ width: '130px', height: 'auto', borderRadius: '10px', margin: '0 auto 12px', display: 'block', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
+            />
             <h3>No reports submitted yet</h3>
             <p>Help keep your neighborhood clean by submitting your first waste report.</p>
             <button

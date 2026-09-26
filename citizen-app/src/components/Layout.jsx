@@ -11,8 +11,8 @@ export default function Layout() {
     <div className="app-layout">
       <header className="app-header">
         <div className="header-brand">
-          <div className="brand-logo-icon">
-            <AppLogoIcon size={18} className="logo-sparkle" />
+          <div className="brand-logo-icon" style={{ background: 'transparent' }}>
+            <AppLogoIcon size={26} className="logo-sparkle" />
           </div>
           <div className="brand-text">
             <span className="brand-name">SwachhLens</span>

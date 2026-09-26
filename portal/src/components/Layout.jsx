@@ -40,8 +40,8 @@ export default function Layout({ user }) {
     <div className="portal-layout">
       <aside className="portal-sidebar">
         <div className="sidebar-brand">
-          <div className="brand-icon-box">
-            <AppLogoIcon size={20} className="text-white" />
+          <div className="brand-icon-box" style={{ background: 'transparent' }}>
+            <AppLogoIcon size={28} />
           </div>
           <div className="brand-titles">
             <h1>SwachhLens</h1>

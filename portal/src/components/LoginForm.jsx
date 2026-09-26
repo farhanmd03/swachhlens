@@ -63,11 +63,11 @@ export default function LoginForm() {
     <div className="login-container">
       <div className="login-card">
         <div className="login-header">
-          <div className="login-brand-icon">
-            <AppLogoIcon size={24} className="text-white" />
-          </div>
-          <h1>SwachhLens</h1>
-          <h2 className="login-subtitle-role">Municipal Operations</h2>
+          <img
+            src="/assets/branding/swachhlens-municipal-operations-lockup.png"
+            alt="SwachhLens Municipal Operations"
+            style={{ width: '100%', maxWidth: '280px', height: 'auto', margin: '0 auto 12px', display: 'block' }}
+          />
           <p className="login-portal-desc">
             Authorized access for municipal operations and field response teams.
           </p>

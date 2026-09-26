@@ -354,6 +354,19 @@ export default function ReportDetailPage() {
         <LifecycleTimeline complaint={complaint} />
       </div>
 
+      {/* ── Issue Resolved Celebration Banner ──────────────────── */}
+      {isResolved && (
+        <div className="detail-section-card resolved-celebration-card" style={{ textAlign: 'center', background: '#f0fdf4', borderColor: '#bbf7d0', padding: '20px 16px' }}>
+          <img
+            src="/assets/branding/citizen-issue-resolved.png"
+            alt="Issue Resolved"
+            style={{ width: '100%', maxWidth: '200px', height: 'auto', borderRadius: '10px', margin: '0 auto 12px', display: 'block', boxShadow: '0 4px 12px rgba(16,185,129,0.1)' }}
+          />
+          <h3 style={{ color: '#166534', margin: '0 0 4px 0', fontSize: '1.05rem', fontWeight: 800 }}>Clean Neighborhood Restored!</h3>
+          <p style={{ color: '#15803d', margin: 0, fontSize: '0.84rem' }}>Municipal response unit has completed cleanup and on-site verification.</p>
+        </div>
+      )}
+
       {/* ── Citizen Resolution Feedback ────────────────────────── */}
       {isResolved && !hasFeedback && !feedbackSubmitted && (
         <div className="detail-section-card feedback-prompt-card">

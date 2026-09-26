@@ -84,9 +84,13 @@ export default function ComplaintTable({ complaints, sortField, sortDir, onSort,
           {complaints.length === 0 ? (
             <tr>
               <td colSpan="11" className="empty-table-row">
-                <div className="empty-table-msg">
-                  <Inbox size={20} className="text-muted" />
-                  <span>No complaints match the selected filter criteria.</span>
+                <div className="empty-table-msg" style={{ padding: '24px 16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                  <img
+                    src="/assets/branding/municipal-all-clear.png"
+                    alt="All Clear"
+                    style={{ width: '80px', height: 'auto', borderRadius: '8px', opacity: 0.9 }}
+                  />
+                  <span style={{ fontWeight: 600, color: 'var(--text-muted)' }}>No complaints match the selected filter criteria.</span>
                 </div>
               </td>
             </tr>

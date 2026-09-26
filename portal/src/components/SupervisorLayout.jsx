@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { signOut } from '../services/authService.js';
 import { getActiveTeams } from '../services/teamService.js';
 import { getTeamWithZone } from '../services/dispatchRecommendationService.js';
+import AppLogoIcon from './AppLogoIcon.jsx';
 import {
   HardHat,
   ClipboardList,
@@ -49,8 +50,8 @@ export default function SupervisorLayout({ user }) {
     <div className="portal-layout supervisor-layout">
       <aside className="portal-sidebar supervisor-sidebar">
         <div className="sidebar-brand">
-          <div className="brand-icon-box supervisor-brand-icon">
-            <HardHat size={20} className="text-white" />
+          <div className="brand-icon-box supervisor-brand-icon" style={{ background: 'transparent' }}>
+            <AppLogoIcon size={28} />
           </div>
           <div className="brand-titles">
             <h1>SwachhLens</h1>
@@ -61,7 +62,10 @@ export default function SupervisorLayout({ user }) {
         {/* ── Supervisor Team Identity Badge ───────────────────────── */}
         <div className="supervisor-team-badge-box">
           <div className="supervisor-team-header">
-            <span className="sup-badge-role">FIELD SUPERVISOR</span>
+            <span className="sup-badge-role">
+              <HardHat size={12} style={{ display: 'inline', marginRight: 4, verticalAlign: '-1px' }} />
+              FIELD SUPERVISOR
+            </span>
             <span className="sup-team-zone">{teamZone}</span>
           </div>
           <strong className="sup-team-title">{teamName}</strong>

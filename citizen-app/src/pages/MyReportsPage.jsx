@@ -124,8 +124,12 @@ export default function MyReportsPage() {
 
       {/* ── Complaints List ───────────────────────────────────── */}
       {filteredComplaints.length === 0 ? (
-        <div className="empty-state-card">
-          <Inbox size={40} className="empty-icon-muted" />
+        <div className="empty-state-card" style={{ textAlign: 'center', padding: '32px 16px' }}>
+          <img
+            src="/assets/branding/citizen-report-waste.png"
+            alt="Report Waste"
+            style={{ width: '130px', height: 'auto', borderRadius: '10px', margin: '0 auto 14px', display: 'block', boxShadow: '0 4px 12px rgba(0,0,0,0.06)' }}
+          />
           <h3>
             {complaints.length === 0
               ? 'No reports found'

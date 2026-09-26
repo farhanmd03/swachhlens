@@ -135,9 +135,16 @@ export default function OperationalAlerts({ complaints, onApplyFilter }) {
   if (activeAlerts.length === 0) {
     return (
       <div className="operational-alerts-container alerts-all-clear">
-        <div className="alerts-clear-box">
-          <CheckCircle2 size={20} className="text-emerald" />
-          <span>All operational priority queues clear — No immediate hazard escalations pending.</span>
+        <div className="alerts-clear-box" style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+          <img
+            src="/assets/branding/municipal-all-clear.png"
+            alt="All Clear"
+            style={{ width: '48px', height: '48px', objectFit: 'contain', borderRadius: '6px', flexShrink: 0 }}
+          />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <CheckCircle2 size={18} className="text-emerald" style={{ flexShrink: 0 }} />
+            <span>All operational priority queues clear — No immediate hazard escalations pending.</span>
+          </div>
         </div>
       </div>
     );

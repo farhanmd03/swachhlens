@@ -266,8 +266,12 @@ export default function SupervisorDashboardPage({ user }) {
       {loading ? (
         <div className="portal-loading-card">Loading team assignments...</div>
       ) : filteredComplaints.length === 0 ? (
-        <div className="empty-jobs-card">
-          <HardHat size={36} className="text-muted" />
+        <div className="empty-jobs-card" style={{ textAlign: 'center', padding: '32px 16px' }}>
+          <img
+            src="/assets/branding/municipal-all-clear.png"
+            alt="All Clear"
+            style={{ width: '110px', height: 'auto', margin: '0 auto 14px', display: 'block', borderRadius: '8px' }}
+          />
           <h3>No assigned jobs found in this view</h3>
           <p>When municipal operators dispatch jobs to your unit, they will appear here in real-time.</p>
         </div>

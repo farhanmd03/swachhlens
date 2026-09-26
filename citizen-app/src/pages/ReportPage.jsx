@@ -434,9 +434,16 @@ export default function ReportPage() {
               <span>Analyze with Vision AI →</span>
             </button>
           ) : (
-            <p className="hint-text">
-              Select or take a photo above to start AI waste classification.
-            </p>
+            <div className="report-empty-state-visual" style={{ textAlign: "center", margin: "16px 0 8px" }}>
+              <img
+                src="/assets/branding/citizen-report-waste.png"
+                alt="Report Waste"
+                style={{ width: "100%", maxWidth: "220px", height: "auto", borderRadius: "10px", margin: "0 auto 10px", display: "block", boxShadow: "0 4px 12px rgba(0,0,0,0.06)" }}
+              />
+              <p className="hint-text">
+                Select or take a photo above to start AI waste classification.
+              </p>
+            </div>
           )}
         </div>
       )}
@@ -448,7 +455,16 @@ export default function ReportPage() {
       {step === STEPS.LOCATING && (
         <LoadingSpinner message="Detecting GPS coordinates... (please allow browser access)" />
       )}
-      {step === STEPS.ANALYZING && <LoadingSpinner message={analysisStage} />}
+      {step === STEPS.ANALYZING && (
+        <div className="analyzing-visual-box" style={{ textAlign: "center", padding: "16px 0" }}>
+          <img
+            src="/assets/branding/citizen-vision-ai.png"
+            alt="AI Analysis"
+            style={{ width: "100%", maxWidth: "200px", height: "auto", borderRadius: "10px", margin: "0 auto 16px", display: "block", boxShadow: "0 4px 12px rgba(0,0,0,0.06)" }}
+          />
+          <LoadingSpinner message={analysisStage} />
+        </div>
+      )}
       {step === STEPS.SUBMITTING && (
         <LoadingSpinner message="Creating complaint record in Firestore..." />
       )}
@@ -707,10 +723,12 @@ export default function ReportPage() {
 
       {/* ── STEP 4: SUBMISSION SUCCESS ────────────────────────── */}
       {step === STEPS.SUCCESS && (
-        <div className="report-flow-card success-card">
-          <div className="success-hero-icon">
-            <CheckCircle2 size={56} className="text-emerald" />
-          </div>
+        <div className="report-flow-card success-card" style={{ textAlign: "center" }}>
+          <img
+            src="/assets/branding/citizen-report-submitted.png"
+            alt="Report Submitted"
+            style={{ width: "100%", maxWidth: "180px", height: "auto", borderRadius: "10px", margin: "0 auto 14px", display: "block", boxShadow: "0 4px 12px rgba(0,0,0,0.06)" }}
+          />
           <h3 className="success-title">Report Submitted Successfully!</h3>
           <p className="success-subtitle">
             Your complaint is registered in Firestore and queued for municipal
