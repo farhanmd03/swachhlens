@@ -3566,3 +3566,138 @@ body {
   align-items: center;
   gap: 5px;
 }
+
+/* ── Service Frequency Selector ────────────────────────────────── */
+.frequency-selector-block {
+  margin-bottom: 20px;
+}
+
+.frequency-toggle-group {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+@media (min-width: 540px) {
+  .frequency-toggle-group {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.frequency-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--surface, #ffffff);
+  border: 2px solid var(--border, #e2e8f0);
+  border-radius: 12px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  user-select: none;
+  width: 100%;
+}
+
+.frequency-btn:hover {
+  border-color: #cbd5e1;
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.frequency-btn.selected {
+  border-color: #059669;
+  background: #f0fdf4;
+  box-shadow: 0 0 0 1px #059669, 0 4px 12px rgba(5, 150, 105, 0.12);
+}
+
+.frequency-btn-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.frequency-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+
+.frequency-btn.selected .frequency-icon-box {
+  background: #dcfce7;
+  color: #059669;
+}
+
+.frequency-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.frequency-title {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.25;
+}
+
+.frequency-btn.selected .frequency-title {
+  color: #065f46;
+  font-weight: 700;
+}
+
+.frequency-sub {
+  font-size: 0.76rem;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+.frequency-btn.selected .frequency-sub {
+  color: #047857;
+}
+
+.frequency-check-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-left: 8px;
+}
+
+.freq-check-active {
+  color: #059669;
+}
+
+.freq-check-empty {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #cbd5e1;
+  border-radius: 50%;
+  background: transparent;
+  transition: all 0.15s ease;
+}
+
+.frequency-btn:hover .freq-check-empty {
+  border-color: #94a3b8;
+}
+
+.frequency-hint-note {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 8px 12px;
+  border-radius: 8px;
+  line-height: 1.4;
+}
+

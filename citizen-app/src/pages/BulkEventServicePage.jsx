@@ -357,9 +357,26 @@ export default function BulkEventServicePage() {
                     type="button"
                     className={`frequency-btn ${isSelected ? 'selected' : ''}`}
                     onClick={() => setServiceFrequency(freqKey)}
+                    aria-pressed={isSelected}
                   >
-                    <Repeat size={15} />
-                    <span>{SERVICE_FREQUENCY_LABELS[freqKey]}</span>
+                    <div className="frequency-btn-content">
+                      <div className="frequency-icon-box">
+                        {freqKey === 'one_time' ? <Calendar size={18} /> : <Repeat size={18} />}
+                      </div>
+                      <div className="frequency-info">
+                        <strong className="frequency-title">{SERVICE_FREQUENCY_LABELS[freqKey]}</strong>
+                        <span className="frequency-sub">
+                          {freqKey === 'one_time' ? 'Single scheduled pickup' : 'Regular recurring route'}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="frequency-check-indicator">
+                      {isSelected ? (
+                        <CheckCircle2 size={18} className="freq-check-active" />
+                      ) : (
+                        <div className="freq-check-empty" />
+                      )}
+                    </div>
                   </button>
                 );
               })}
