@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import StatusBadge from './StatusBadge.jsx';
 import PriorityBadge from './PriorityBadge.jsx';
 import { WASTE_TYPE_LABELS } from '../config/constants.js';
-import { AlertTriangle, Link2, Users, Calendar } from 'lucide-react';
+import { AlertTriangle, Link2, Users, Calendar, Building2 } from 'lucide-react';
 
 /**
  * Compact complaint card for the My Reports list.
@@ -49,7 +49,7 @@ export default function ComplaintCard({ complaint }) {
           <img src={`data:image/jpeg;base64,${imageBase64}`} alt={wasteLabel} />
         ) : (
           <div className="placeholder-image">
-            {isCommercial ? '🏢 Bulk' : 'No Image'}
+            {isCommercial ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Building2 size={14} /> Bulk</span> : 'No Image'}
           </div>
         )}
         {urgentEscalation && (
@@ -66,7 +66,8 @@ export default function ComplaintCard({ complaint }) {
           )}
           {isCommercial && (
             <span className="card-commercial-badge">
-              🏢 Bulk Service
+              <Building2 size={11} />
+              <span>Bulk Service</span>
             </span>
           )}
         </div>

@@ -1,36 +1,26 @@
 import React from 'react';
-import { PRIORITY_THRESHOLDS, PRIORITY_COLORS } from '../config/constants.js';
+import { PRIORITY_THRESHOLDS } from '../config/constants.js';
 
 /**
- * Priority indicator showing score and level.
+ * Standardized semantic priority badge for SwachhLens.
+ * Eliminates inline styles in favor of semantic CSS classes with soft tints and crisp contrast.
  */
-export default function PriorityBadge({ score }) {
-  let level, color;
+export default function PriorityBadge({ score, className = '' }) {
+  let level = 'Low';
+  let tierClass = 'priority-low';
+
   if (score > PRIORITY_THRESHOLDS.HIGH) {
     level = 'High';
-    color = PRIORITY_COLORS.high;
+    tierClass = 'priority-high';
   } else if (score >= PRIORITY_THRESHOLDS.MEDIUM) {
     level = 'Medium';
-    color = PRIORITY_COLORS.medium;
-  } else {
-    level = 'Low';
-    color = PRIORITY_COLORS.low;
+    tierClass = 'priority-medium';
   }
 
   return (
-    <span
-      className="priority-badge"
-      style={{
-        backgroundColor: color,
-        color: '#fff',
-        padding: '2px 10px',
-        borderRadius: '12px',
-        fontSize: '0.8rem',
-        fontWeight: 600,
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {level} ({score})
+    <span className={`priority-badge ${tierClass} ${className}`}>
+      <span className="priority-level-text">{level}</span>
+      <span className="priority-score-num">({score})</span>
     </span>
   );
 }

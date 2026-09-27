@@ -145,7 +145,7 @@ export default function ComplaintTable({ complaints, sortField, sortDir, onSort,
                           fontWeight: 700,
                           width: 'fit-content',
                         }}>
-                          🏢 Bulk Service
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}><Building2 size={11} /> Bulk Service</span>
                         </span>
                       )}
                     </div>

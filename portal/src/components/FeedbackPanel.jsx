@@ -35,13 +35,16 @@ export default function FeedbackPanel({ feedback }) {
         <span>{config.label}</span>
       </div>
 
-      <div className="feedback-stars">
+      <div className="feedback-stars" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
         {[1, 2, 3, 4, 5].map((s) => (
-          <span key={s} className={s <= rating ? 'star-gold' : 'star-muted'}>
-            ★
-          </span>
+          <Star
+            key={s}
+            size={14}
+            fill={s <= rating ? '#f59e0b' : 'none'}
+            color={s <= rating ? '#f59e0b' : '#cbd5e1'}
+          />
         ))}
-        <span className="feedback-rating-text">{rating}/5 Rating</span>
+        <span className="feedback-rating-text" style={{ marginLeft: '6px' }}>{rating}/5 Rating</span>
       </div>
 
       {comment && <p className="feedback-comment">"{comment}"</p>}

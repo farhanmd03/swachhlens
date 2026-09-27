@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertTriangle, RefreshCw, ArrowLeft } from 'lucide-react';
 
 /**
  * SwachhLens Municipal Portal — Global Error Boundary
@@ -66,10 +67,9 @@ export default class ErrorBoundary extends React.Component {
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 16px',
-                fontSize: '26px',
               }}
             >
-              ⚠️
+              <AlertTriangle size={28} color="#ef4444" />
             </div>
 
             <h2
@@ -114,7 +114,8 @@ export default class ErrorBoundary extends React.Component {
                   gap: '8px',
                 }}
               >
-                ↺ Reload Console
+                <RefreshCw size={15} />
+                <span>Reload Console</span>
               </button>
               <button
                 onClick={this.handleHome}
@@ -127,9 +128,14 @@ export default class ErrorBoundary extends React.Component {
                   fontSize: '0.875rem',
                   fontWeight: '600',
                   cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '8px',
                 }}
               >
-                ← Return to Dashboard
+                <ArrowLeft size={15} />
+                <span>Return to Dashboard</span>
               </button>
             </div>
 

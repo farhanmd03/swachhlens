@@ -45,6 +45,8 @@ import {
   FileCheck,
   Lock,
   X,
+  Package,
+  Recycle,
 } from 'lucide-react';
 
 function confidenceLabel(confidence) {
@@ -332,7 +334,7 @@ export default function ReportDetailPage() {
               <span className="meta-label">Expected Material Streams</span>
               <div className="recoverable-streams-tags" style={{ marginTop: '4px' }}>
                 {bDetails.wasteTypeLabels?.map((label, idx) => (
-                  <span key={idx} className="stream-tag">📦 {label}</span>
+                  <span key={idx} className="stream-tag"><Package size={12} /> {label}</span>
                 )) || <span className="meta-value">General Event Waste</span>}
               </div>
             </div>
@@ -416,7 +418,7 @@ export default function ReportDetailPage() {
                 </div>
                 <div className="recoverable-streams-tags">
                   {cAssessment.recoverableStreams.map((st, i) => (
-                    <span key={i} className="stream-tag">♻️ {st}</span>
+                    <span key={i} className="stream-tag"><Recycle size={12} /> {st}</span>
                   ))}
                 </div>
                 <p className="recovery-notes">{cAssessment.recoveryNotes}</p>
@@ -474,7 +476,7 @@ export default function ReportDetailPage() {
                 <div>
                   <strong className="total-label">Total Indicative Estimate</strong>
                   <span className="total-sub">
-                    {isPriceLocked ? '🔒 Final confirmed rate locked for execution' : 'Includes mobilization, workforce & transport allowance'}
+                    {isPriceLocked ? 'Final confirmed rate locked for execution' : 'Includes mobilization, workforce & transport allowance'}
                   </span>
                 </div>
                 <strong className="total-amount">₹{(isPriceLocked ? lockedAmount : cQuote.indicativeTotal)?.toLocaleString('en-IN')}</strong>
@@ -587,9 +589,15 @@ export default function ReportDetailPage() {
               </div>
               <div className="feedback-rating-line">
                 <span className="fdbk-label">Rating:</span>
-                <span className="fdbk-stars">
-                  {'★'.repeat(feedback.rating)}
-                  {'☆'.repeat(5 - feedback.rating)}
+                <span className="fdbk-stars" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      size={14}
+                      fill={s <= feedback.rating ? '#f59e0b' : 'none'}
+                      color={s <= feedback.rating ? '#f59e0b' : '#cbd5e1'}
+                    />
+                  ))}
                 </span>
                 <span className="fdbk-score-num">({feedback.rating}/5)</span>
               </div>
@@ -906,9 +914,15 @@ export default function ReportDetailPage() {
             </div>
             <div className="feedback-rating-line">
               <span className="fdbk-label">Rating:</span>
-              <span className="fdbk-stars">
-                {'★'.repeat(feedback.rating)}
-                {'☆'.repeat(5 - feedback.rating)}
+              <span className="fdbk-stars" style={{ display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                {[1, 2, 3, 4, 5].map((s) => (
+                  <Star
+                    key={s}
+                    size={14}
+                    fill={s <= feedback.rating ? '#f59e0b' : 'none'}
+                    color={s <= feedback.rating ? '#f59e0b' : '#cbd5e1'}
+                  />
+                ))}
               </span>
               <span className="fdbk-score-num">({feedback.rating}/5)</span>
             </div>
@@ -919,8 +933,9 @@ export default function ReportDetailPage() {
               </div>
             )}
             {feedback.requestReopen && (
-              <div className="feedback-reopen-line" style={{ marginTop: '8px', color: '#dc2626', fontSize: '0.82rem', fontWeight: '700' }}>
-                ⚠️ Reopening Requested by Citizen
+              <div className="feedback-reopen-line" style={{ marginTop: '8px', color: '#dc2626', fontSize: '0.82rem', fontWeight: '700', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                <AlertTriangle size={14} />
+                <span>Reopening Requested by Citizen</span>
               </div>
             )}
             <p className="feedback-timestamp">

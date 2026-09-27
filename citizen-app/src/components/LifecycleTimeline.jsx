@@ -1,4 +1,5 @@
 import React from 'react';
+import { Check } from 'lucide-react';
 
 const LIFECYCLE_STEPS = [
   { key: 'reported', label: 'Reported', tsKey: 'timestamp' },
@@ -104,7 +105,7 @@ export default function LifecycleTimeline({ complaint }) {
             className={`timeline-step ${isDone ? 'done' : ''} ${isCurrent ? 'current' : ''} ${isPending ? 'pending' : ''}`}
           >
             <div className="timeline-icon">
-              {isDone ? '✓' : isCurrent ? '●' : '○'}
+              {isDone ? <Check size={12} strokeWidth={2.5} /> : isCurrent ? <span className="timeline-pulse-dot" /> : <span className="timeline-pending-dot" />}
             </div>
             <div className="timeline-content">
               <span className="timeline-label">{step.label}</span>

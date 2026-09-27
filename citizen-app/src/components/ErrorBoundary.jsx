@@ -1,4 +1,5 @@
 import React from 'react';
+import { AlertTriangle, RefreshCw, ArrowLeft } from 'lucide-react';
 
 /**
  * SwachhLens Citizen App — Global Error Boundary
@@ -65,10 +66,9 @@ export default class ErrorBoundary extends React.Component {
                 alignItems: 'center',
                 justifyContent: 'center',
                 margin: '0 auto 16px',
-                fontSize: '24px',
               }}
             >
-              ⚠️
+              <AlertTriangle size={26} color="#dc2626" />
             </div>
 
             <h2
@@ -112,7 +112,8 @@ export default class ErrorBoundary extends React.Component {
                   gap: '6px',
                 }}
               >
-                ↺ Retry
+                <RefreshCw size={15} />
+                <span>Retry</span>
               </button>
               <button
                 onClick={this.handleHome}
@@ -125,9 +126,14 @@ export default class ErrorBoundary extends React.Component {
                   fontSize: '0.875rem',
                   fontWeight: '600',
                   cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '6px',
                 }}
               >
-                ← Return to Home
+                <ArrowLeft size={15} />
+                <span>Return to Home</span>
               </button>
             </div>
 

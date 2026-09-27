@@ -57,6 +57,8 @@ import {
   DollarSign,
   MapPin,
   Briefcase,
+  Users,
+  X,
 } from 'lucide-react';
 
 function confidenceLabel(confidence) {
@@ -346,8 +348,9 @@ export default function ComplaintDetailPage() {
           <div className="commercial-header-card">
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                <span className="table-bulk-badge" style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, fontSize: '0.75rem' }}>
-                  🏢 Commercial Bulk Service
+                <span className="table-bulk-badge" style={{ background: '#ecfdf5', color: '#047857', border: '1px solid #a7f3d0', padding: '2px 8px', borderRadius: '4px', fontWeight: 700, fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <Building2 size={12} />
+                  <span>Commercial Bulk Service</span>
                 </span>
                 <span className="incident-reported-date" style={{ color: '#64748b', fontSize: '0.82rem' }}>
                   Requested: {new Date(timestamp).toLocaleString('en-IN')}
@@ -357,9 +360,9 @@ export default function ComplaintDetailPage() {
                 {eventName || ESTABLISHMENT_TYPE_LABELS[establishmentType] || 'Commercial Event Waste Service'}
               </h2>
               <div style={{ display: 'flex', alignItems: 'center', gap: '16px', fontSize: '0.85rem', color: '#64748b' }}>
-                <span>📅 <strong>Event Date:</strong> {eventDate || 'Scheduled'}</span>
-                <span>👥 <strong>Expected Attendance:</strong> {expectedAttendance || '—'} attendees</span>
-                <span>⏰ <strong>Window:</strong> {SERVICE_WINDOW_LABELS[serviceWindow] || serviceWindow}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Calendar size={13} /> <strong>Event Date:</strong> {eventDate || 'Scheduled'}</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Users size={13} /> <strong>Expected Attendance:</strong> {expectedAttendance || '—'} attendees</span>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><Clock size={13} /> <strong>Window:</strong> {SERVICE_WINDOW_LABELS[serviceWindow] || serviceWindow}</span>
               </div>
             </div>
 
@@ -455,7 +458,11 @@ export default function ComplaintDetailPage() {
                   <div className="rep-row">
                     <span className="rep-k">Segregated at Source:</span>
                     <strong className="rep-v" style={{ color: segregatedAtSource ? '#15803d' : '#b45309' }}>
-                      {segregatedAtSource ? '✅ Yes — Segregated by Organizer' : '⚠️ No — Requires Post-Sorting'}
+                      {segregatedAtSource ? (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><CheckCircle2 size={13} /> Yes — Segregated by Organizer</span>
+                      ) : (
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={13} /> No — Requires Post-Sorting</span>
+                      )}
                     </strong>
                   </div>
                 </div>
@@ -589,8 +596,9 @@ export default function ComplaintDetailPage() {
                       <td colSpan="2">
                         <strong>Total Indicative Estimate</strong>
                         {complaint.priceLock?.isLocked && (
-                          <span style={{ display: 'block', fontSize: '0.72rem', color: '#059669', fontWeight: 400 }}>
-                            🔒 Price locked by municipal operations
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: '#059669', fontWeight: 500, marginTop: '2px' }}>
+                            <Lock size={12} />
+                            <span>Price locked by municipal operations</span>
                           </span>
                         )}
                       </td>
@@ -1456,7 +1464,7 @@ export default function ComplaintDetailPage() {
                 <h3>Request Field Rework</h3>
                 <span className="modal-id-tag">{trackingId}</span>
               </div>
-              <button className="modal-close" onClick={() => setShowReworkModal(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowReworkModal(false)} aria-label="Close dialog"><X size={16} /></button>
             </div>
 
             <form onSubmit={handleSendRework} className="modal-body">
@@ -1512,7 +1520,7 @@ export default function ComplaintDetailPage() {
                 <h3>Adjust Indicative Estimate</h3>
                 <span className="modal-id-tag">{trackingId}</span>
               </div>
-              <button className="modal-close" onClick={() => setShowPriceModal(false)}>✕</button>
+              <button className="modal-close" onClick={() => setShowPriceModal(false)} aria-label="Close dialog"><X size={16} /></button>
             </div>
 
             <form onSubmit={handlePriceAdjustmentSubmit} className="modal-body">

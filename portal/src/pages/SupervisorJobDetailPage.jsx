@@ -34,6 +34,7 @@ import {
   Upload,
   Image as ImageIcon,
   ShieldCheck,
+  X,
 } from 'lucide-react';
 
 /**
@@ -604,8 +605,9 @@ export default function SupervisorJobDetailPage({ user }) {
                 className="modal-close"
                 onClick={() => setShowCompletionModal(false)}
                 disabled={actionLoading}
+                aria-label="Close dialog"
               >
-                ✕
+                <X size={16} />
               </button>
             </div>
 

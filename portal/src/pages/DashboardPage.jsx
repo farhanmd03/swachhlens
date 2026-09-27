@@ -10,6 +10,7 @@ import ComplaintTable from '../components/ComplaintTable.jsx';
 import FilterBar from '../components/FilterBar.jsx';
 import DispatchModal from '../components/DispatchModal.jsx';
 import CommercialDashboard from '../components/CommercialDashboard.jsx';
+import { Building, Building2, AlertTriangle, Flame, X } from 'lucide-react';
 
 export default function DashboardPage() {
   const location = useLocation();
@@ -175,7 +176,7 @@ export default function DashboardPage() {
         <div className="vertical-section-header">
           <div className="section-title-wrap">
             <span className="vertical-tag-pill civic">MUNICIPAL CIVIC OPERATIONS</span>
-            <h3 className="vertical-title">🏛️ Civic Waste Incidents</h3>
+            <h3 className="vertical-title" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Building size={18} /> Civic Waste Incidents</h3>
             <p className="vertical-subtitle">
               Real-time citizen waste reports, automated priority triage, and field response routing.
             </p>
@@ -214,7 +215,7 @@ export default function DashboardPage() {
       <section className="portal-section" id="queue">
         <div className="section-title-row">
           <div>
-            <h3>🚨 Civic Incident Priority Queue</h3>
+            <h3 style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><AlertTriangle size={18} className="text-amber" /> Civic Incident Priority Queue</h3>
             <p className="section-subtext">
               Showing {filteredCivicComplaints.length} of {civicComplaints.length} active civic incident reports
             </p>
@@ -238,7 +239,7 @@ export default function DashboardPage() {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '1.1rem' }}>🔥</span>
+              <Flame size={16} className="text-amber" style={{ verticalAlign: 'middle' }} />
               <span>
                 Active Hotspot Filter: <strong>{selectedHotspot.areaName}</strong> (
                 {selectedHotspot.complaintIds?.length || 0} incidents in cluster)
@@ -263,7 +264,7 @@ export default function DashboardPage() {
               title="Clear hotspot filter"
             >
               <span>Clear Filter</span>
-              <span>✕</span>
+              <X size={13} />
             </button>
           </div>
         )}
@@ -314,7 +315,7 @@ export default function DashboardPage() {
               setSelectedHotspot(null);
             }}
           >
-            <span>🏛️ Civic Incidents</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Building size={14} /> Civic Incidents</span>
             <span className="vertical-tab-count">{civicComplaints.length}</span>
           </button>
           <button
@@ -325,7 +326,7 @@ export default function DashboardPage() {
               setSelectedHotspot(null);
             }}
           >
-            <span>🏢 Commercial Services</span>
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Building2 size={14} /> Commercial Services</span>
             <span className="vertical-tab-count commercial-pill-count">{commercialComplaints.length}</span>
           </button>
         </div>
@@ -334,7 +335,7 @@ export default function DashboardPage() {
       {/* Firestore connectivity banner */}
       {firestoreError && (
         <div className="firestore-error-banner">
-          <strong>⚠️ Firestore connection issue:</strong> {firestoreError}
+          <strong style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}><AlertTriangle size={14} /> Firestore connection issue:</strong> {firestoreError}
         </div>
       )}
 
@@ -360,7 +361,7 @@ export default function DashboardPage() {
             <div className="vertical-section-header">
               <div className="section-title-wrap">
                 <span className="vertical-tag-pill commercial">ENTERPRISE &amp; EVENT SERVICES</span>
-                <h3 className="vertical-title">🏢 Commercial &amp; Bulk Operations</h3>
+                <h3 className="vertical-title" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}><Building2 size={18} /> Commercial &amp; Bulk Operations</h3>
                 <p className="vertical-subtitle">
                   Scheduled bulk event collections, resource recovery quotas, and commercial dispatch.
                 </p>

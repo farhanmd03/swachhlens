@@ -6,6 +6,7 @@ import {
   Clock,
   Wrench,
   CheckCircle2,
+  Check,
   Leaf,
   Search,
   X,
@@ -337,7 +338,7 @@ export default function CommercialDashboard({
             >
               <div className="comm-kpi-top">
                 <span className="comm-kpi-title">{card.label}</span>
-                {isSelected && <span className="comm-kpi-active-tag">✓ Active</span>}
+                {isSelected && <span className="comm-kpi-active-tag"><Check size={11} strokeWidth={2.5} /> Active</span>}
               </div>
               <div className="comm-kpi-count">{card.value}</div>
               <div className="comm-kpi-sub">{card.sub}</div>
@@ -362,7 +363,8 @@ export default function CommercialDashboard({
           <div className="commercial-active-filter-strip">
             <div className="active-filter-left">
               <span className="active-filter-chip">
-                ✓ {activeInfo.title}
+                <CheckCircle2 size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                <span>{activeInfo.title}</span>
               </span>
               <span className="active-filter-detail">
                 Active filter: <strong>Commercial Services → {activeInfo.title}</strong> — {activeInfo.text}

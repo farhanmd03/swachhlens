@@ -45,6 +45,7 @@ import {
   Info,
   Repeat,
   Compass,
+  Recycle,
 } from 'lucide-react';
 
 const DEFAULT_DEMO_GPS = { lat: 22.5726, lng: 88.3639 }; // Central Kolkata
@@ -787,7 +788,7 @@ export default function BulkEventServicePage() {
                 </div>
                 <div className="recoverable-streams-tags">
                   {assessment.recoverableMaterials.map((mat, i) => (
-                    <span key={i} className="stream-tag">♻️ {mat}</span>
+                    <span key={i} className="stream-tag"><Recycle size={12} /> {mat}</span>
                   ))}
                 </div>
                 <p className="recovery-notes">

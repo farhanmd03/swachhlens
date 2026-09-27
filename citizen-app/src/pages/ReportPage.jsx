@@ -39,6 +39,7 @@ import {
   Bot,
   AlertTriangle,
   Biohazard,
+  FlaskConical,
 } from "lucide-react";
 
 const DEMO_LOCATION = { lat: 28.6315, lng: 77.2167 };
@@ -489,12 +490,14 @@ export default function ReportPage() {
           <div className="demo-location-block">
             <hr />
             <p className="demo-location-warning">
-              🧪 <strong>Test Mode</strong> — If browser GPS is unavailable on
+              <FlaskConical size={14} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+              <strong>Test Mode</strong> — If browser GPS is unavailable on
               your device, you can use a preset test location (Connaught Place,
               New Delhi).
             </p>
             <button className="btn btn-demo" onClick={handleUseDemoLocation}>
-              🧪 Use Demo Location (Testing Only)
+              <FlaskConical size={14} />
+              <span>Use Demo Location (Testing Only)</span>
             </button>
           </div>
         </div>
@@ -516,7 +519,8 @@ export default function ReportPage() {
                 className="review-image"
               />
               <span className="image-verified-pill">
-                ✓ Fingerprinted & Optimized
+                <Check size={13} strokeWidth={2.5} />
+                <span>Fingerprinted &amp; Optimized</span>
               </span>
             </div>
           )}
@@ -682,7 +686,7 @@ export default function ReportPage() {
             >
               <div className="geotag-main">
                 <div className="geotag-label-row">
-                  <span className="geotag-pin">📍</span>
+                  <MapPin size={14} className="geotag-pin-icon" />
                   <span className="geotag-status-text">Location captured</span>
                   {gpsIsDemo ? (
                     <span className="geotag-badge demo-badge">
@@ -696,7 +700,7 @@ export default function ReportPage() {
                   {gps.lat.toFixed(6)}, {gps.lng.toFixed(6)}
                 </div>
                 <div className="geotag-timestamp-row">
-                  <span className="geotag-check">✓</span>
+                  <Check size={13} strokeWidth={2.5} className="geotag-check-icon" />
                   <span className="geotag-ts-text">Timestamp attached</span>
                 </div>
               </div>

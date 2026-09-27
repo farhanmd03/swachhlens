@@ -20,6 +20,11 @@ import {
   Phone,
   RotateCcw,
   CheckCircle2,
+  ClipboardList,
+  Truck,
+  Recycle,
+  Search,
+  Repeat,
 } from 'lucide-react';
 
 export default function CommercialServiceTable({
@@ -78,7 +83,7 @@ export default function CommercialServiceTable({
     if (activeKpiFilter === 'awaiting_dispatch') {
       return (
         <div className="commercial-empty-state">
-          <div className="empty-state-icon">📋</div>
+          <div className="empty-state-icon"><ClipboardList size={36} className="text-muted" /></div>
           <h4>No commercial services are currently awaiting dispatch.</h4>
           <p>
             All active bookings are either currently dispatched, awaiting customer price review, or verified and closed.
@@ -96,7 +101,7 @@ export default function CommercialServiceTable({
     if (activeKpiFilter === 'in_operations') {
       return (
         <div className="commercial-empty-state">
-          <div className="empty-state-icon">🚚</div>
+          <div className="empty-state-icon"><Truck size={36} className="text-muted" /></div>
           <h4>No commercial services are currently active in operations.</h4>
           <p>There are no field response teams currently deployed on active commercial runs.</p>
           {onResetFilters && (
@@ -112,7 +117,7 @@ export default function CommercialServiceTable({
     if (activeKpiFilter === 'completed') {
       return (
         <div className="commercial-empty-state">
-          <div className="empty-state-icon">✅</div>
+          <div className="empty-state-icon"><CheckCircle2 size={36} className="text-muted" /></div>
           <h4>No completed commercial services found.</h4>
           <p>Completed, verified and closed commercial bookings will appear here.</p>
           {onResetFilters && (
@@ -128,7 +133,7 @@ export default function CommercialServiceTable({
     if (activeKpiFilter === 'resource_recovery') {
       return (
         <div className="commercial-empty-state">
-          <div className="empty-state-icon">♻️</div>
+          <div className="empty-state-icon"><Recycle size={36} className="text-muted" /></div>
           <h4>No commercial services currently have identified recovery opportunities.</h4>
           <p>Bookings with recoverable materials and circular diversion potential will be listed here.</p>
           {onResetFilters && (
@@ -143,7 +148,7 @@ export default function CommercialServiceTable({
 
     return (
       <div className="commercial-empty-state">
-        <div className="empty-state-icon">🔍</div>
+        <div className="empty-state-icon"><Search size={36} className="text-muted" /></div>
         <h4>No commercial service records match the selected filter criteria.</h4>
         <p>Try clearing your search term or adjusting status filter settings.</p>
         {onResetFilters && (
@@ -262,8 +267,8 @@ export default function CommercialServiceTable({
                     </span>
                     <strong className="comm-event-title">{establishmentLabel}</strong>
                     <div className="comm-badges-subrow">
-                      <span className={`comm-freq-pill ${isRecurring ? 'recurring' : 'onetime'}`}>
-                        {isRecurring ? '🔁 Recurring' : '🗓️ One-time'}
+                      <span className={`comm-freq-pill ${isRecurring ? 'recurring' : 'onetime'}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        {isRecurring ? <><Repeat size={11} /> Recurring</> : <><Calendar size={11} /> One-time</>}
                       </span>
                     </div>
                   </div>

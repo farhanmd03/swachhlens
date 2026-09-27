@@ -72,7 +72,7 @@ export default function HomePage() {
           </div>
           <h1 className="hero-title">Hello, {greetingName}</h1>
           <p className="hero-subtitle">
-            What do you need today?
+            Report waste. Track action. Verify the outcome.
           </p>
 
           {/* Dual Action Entry Hub */}
@@ -221,7 +221,8 @@ export default function HomePage() {
               className="btn btn-secondary btn-small"
               onClick={() => navigate('/report')}
             >
-              + Submit First Report
+              <PlusCircle size={14} />
+              <span>Submit First Report</span>
             </button>
           </div>
         ) : (

@@ -104,7 +104,7 @@ export default function ResolutionFeedback({ complaintId, onSubmitted }) {
               disabled={loading}
               aria-label={`${star} star${star !== 1 ? 's' : ''}`}
             >
-              ★
+              <Star size={20} fill={star <= (hoverRating || rating) ? '#f59e0b' : 'none'} color={star <= (hoverRating || rating) ? '#f59e0b' : '#cbd5e1'} />
             </button>
           ))}
         </div>

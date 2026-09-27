@@ -6,7 +6,7 @@ import { getCitizenComplaints } from '../services/complaintService.js';
 import ComplaintCard from '../components/ComplaintCard.jsx';
 import LoadingSpinner from '../components/LoadingSpinner.jsx';
 import { STATUSES, STATUS_LABELS } from '../config/constants.js';
-import { Search, X, Inbox, PlusCircle } from 'lucide-react';
+import { Search, X, Inbox, PlusCircle, Building, Building2 } from 'lucide-react';
 
 export default function MyReportsPage() {
   const navigate = useNavigate();
@@ -109,14 +109,16 @@ export default function MyReportsPage() {
           className={`category-tab-btn ${categoryFilter === 'civic' ? 'active' : ''}`}
           onClick={() => setCategoryFilter('civic')}
         >
-          🏛️ Civic ({countsByCategory.civic})
+          <Building size={14} />
+          <span>Civic ({countsByCategory.civic})</span>
         </button>
         <button
           type="button"
           className={`category-tab-btn ${categoryFilter === 'commercial' ? 'active' : ''}`}
           onClick={() => setCategoryFilter('commercial')}
         >
-          🏢 Bulk Services ({countsByCategory.commercial})
+          <Building2 size={14} />
+          <span>Bulk Services ({countsByCategory.commercial})</span>
         </button>
       </div>
 
@@ -191,7 +193,7 @@ export default function MyReportsPage() {
                 onClick={() => navigate('/bulk-service')}
               >
                 <PlusCircle size={16} />
-                <span>+ Book Bulk Waste Service</span>
+                <span>Book Bulk Waste Service</span>
               </button>
             ) : (
               <button
@@ -199,7 +201,7 @@ export default function MyReportsPage() {
                 onClick={() => navigate('/report')}
               >
                 <PlusCircle size={16} />
-                <span>+ Report Waste Now</span>
+                <span>Report Waste Now</span>
               </button>
             )}
           </div>

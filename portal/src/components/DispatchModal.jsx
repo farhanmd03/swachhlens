@@ -259,8 +259,9 @@ export default function DispatchModal({ complaint, onClose }) {
                   </div>
                 ) : (
                   <div className="smart-dispatch-unavailable">
-                    <p className="smart-unavail-msg">
-                      ⚠️ {smartDispatch.message || 'No suitable active team currently available.'}
+                    <p className="smart-unavail-msg" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+                      <AlertTriangle size={14} />
+                      <span>{smartDispatch.message || 'No suitable active team currently available.'}</span>
                     </p>
                   </div>
                 )}
